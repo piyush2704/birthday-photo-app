@@ -70,6 +70,10 @@ type GuestAccess = {
   pin: string;
 };
 
+type BirthdayAppProps = {
+  initialGuestAccess?: GuestAccess;
+};
+
 const highlightMoments = [
   { title: "First smile", note: "Tiny giggles and bright eyes", orbit: "Orbit 01" },
   { title: "First steps", note: "A year of little milestones", orbit: "Orbit 02" },
@@ -209,6 +213,7 @@ function AppFrame({
   visibleScreens,
   guestGalleryHref,
   guestUploadHref,
+  compactGuestShell,
   publicLanding,
 }: {
   children: ReactNode;
@@ -219,11 +224,12 @@ function AppFrame({
   visibleScreens: ScreenConfig[];
   guestGalleryHref: string;
   guestUploadHref: string;
+  compactGuestShell: boolean;
   publicLanding: boolean;
 }) {
   return (
     <main className="page-shell app-shell">
-      <section className={`hero app-hero ${publicLanding ? "hero-public" : ""}`}>
+      <section className={`hero app-hero ${compactGuestShell ? "hero-public" : ""}`}>
         <div className="hero-copy">
           <div className="hero-orbit">{"Vaayu's 1 Year Around the Sun"}</div>
           <p className="eyebrow">First Birthday Memory Space</p>
@@ -241,7 +247,7 @@ function AppFrame({
             </Link>
           </div>
         </div>
-        {!publicLanding ? (
+        {!compactGuestShell ? (
           <div className="hero-panel">
             <div className="sun-badge">Around the Sun</div>
             <div className="stat-row">
@@ -261,7 +267,7 @@ function AppFrame({
         ) : null}
       </section>
 
-      {!publicLanding ? (
+      {!compactGuestShell ? (
         <nav className="route-nav route-nav-top" aria-label="Primary">
           {visibleScreens.map((screen) => (
             <Link
@@ -357,7 +363,7 @@ function HomeScreen({
   );
 }
 
-export function BirthdayApp() {
+export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const currentScreen = screenByPathname.get(pathname) || "home";
@@ -367,8 +373,8 @@ export function BirthdayApp() {
   const [fullName, setFullName] = useState("");
   const [joinForm, setJoinForm] = useState<JoinForm>({ eventCode: "", pin: "" });
   const [uploadForm, setUploadForm] = useState<UploadForm>({
-    eventCode: "",
-    pin: "",
+    eventCode: initialGuestAccess?.eventCode || "",
+    pin: initialGuestAccess?.pin || "",
     uploaderName: "",
     files: [],
   });
@@ -395,7 +401,9 @@ export function BirthdayApp() {
   const [member, setMember] = useState<EventMemberRecord | null>(null);
   const [gallery, setGallery] = useState<PhotoCard[]>(hasSupabaseClientEnv ? [] : demoGallery);
   const [queue, setQueue] = useState<PhotoCard[]>(hasSupabaseClientEnv ? [] : demoQueue);
-  const [guestAccess, setGuestAccess] = useState<GuestAccess>({ eventCode: "", pin: "" });
+  const [guestAccess, setGuestAccess] = useState<GuestAccess>(
+    initialGuestAccess || { eventCode: "", pin: "" },
+  );
 
   const isAdmin = member?.role === "owner" || member?.role === "admin";
   const isGuestFlow = !session?.user;
@@ -443,7 +451,7 @@ export function BirthdayApp() {
     const nextEventCode = params.get("event");
     const nextPin = params.get("pin");
 
-    if (!nextEventCode && !nextPin) {
+    if ((!nextEventCode && !nextPin) || initialGuestAccess) {
       return;
     }
 
@@ -456,7 +464,7 @@ export function BirthdayApp() {
       eventCode: nextEventCode ? nextEventCode.toUpperCase() : "",
       pin: nextPin ?? "",
     });
-  }, []);
+  }, [initialGuestAccess]);
 
   function buildGuestHref(path: string) {
     if (!isGuestFlow || !guestAccess.eventCode || !guestAccess.pin || !["/upload", "/gallery"].includes(path)) {
@@ -471,12 +479,16 @@ export function BirthdayApp() {
     return `${path}?${params.toString()}`;
   }
 
-  const visibleScreens = isGuestFlow
-    ? screens.filter((screen) => ["upload", "gallery"].includes(screen.key))
-    : screens.filter((screen) => ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key));
-
   const guestUploadHref = buildGuestHref("/upload");
   const guestGalleryHref = buildGuestHref("/gallery");
+  const visibleScreens = (
+    isGuestFlow
+      ? screens.filter((screen) => ["upload", "gallery"].includes(screen.key))
+      : screens.filter((screen) => ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key))
+  ).map((screen) => ({
+    ...screen,
+    href: buildGuestHref(screen.href),
+  }));
 
   useEffect(() => {
     if (!hasSupabaseClientEnv || !session?.user) {
@@ -529,7 +541,7 @@ export function BirthdayApp() {
   }, [dashboardBusy, event?.id, session?.user]);
 
   useEffect(() => {
-    if (!hasSupabaseClientEnv || session?.user || currentScreen !== "gallery") {
+    if (!hasSupabaseClientEnv || session?.user || !["upload", "gallery"].includes(currentScreen)) {
       return;
     }
 
@@ -923,10 +935,12 @@ export function BirthdayApp() {
   const activeEventLabel = event?.title || "Join an event to unlock the dashboard";
   const signedInAs = session?.user?.email || "Anonymous guest";
   const publicLanding = isGuestFlow && currentScreen === "home";
+  const compactGuestShell = isGuestFlow && ["home", "upload", "gallery"].includes(currentScreen);
 
   return (
     <AppFrame
       activeEvent={activeEventLabel}
+      compactGuestShell={compactGuestShell}
       currentScreen={currentScreen}
       guestGalleryHref={guestGalleryHref}
       guestUploadHref={guestUploadHref}
@@ -1161,9 +1175,11 @@ export function BirthdayApp() {
                 <p className="section-label">Share a Memory</p>
                 <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
               </div>
-              <span className="pill">
-                {event?.moderation_required ? "Host approval enabled" : "Auto-approve event"}
-              </span>
+              {!isGuestFlow ? (
+                <span className="pill">
+                  {event?.moderation_required ? "Host approval enabled" : "Auto-approve event"}
+                </span>
+              ) : null}
             </div>
 
             <form className="stack" onSubmit={handleUpload}>
@@ -1226,8 +1242,9 @@ export function BirthdayApp() {
               </button>
             </form>
             <p className="inline-note">
-              Guests can upload one or many photos in seconds from their phones. If moderation is on, the family will
-              {" review before it appears in Vaayu's gallery."}
+              {event?.moderation_required
+                ? "Guests can upload one or many photos in seconds from their phones. The family will review them before they appear in Vaayu's gallery."
+                : "Guests can upload one or many photos in seconds from their phones. Approved photos appear in Vaayu's gallery right away."}
             </p>
           </article>
         </section>
