@@ -39,7 +39,7 @@ type UploadForm = {
   eventCode: string;
   pin: string;
   uploaderName: string;
-  file: File | null;
+  files: File[];
 };
 
 type HostForm = {
@@ -393,7 +393,7 @@ export function BirthdayApp() {
     eventCode: "",
     pin: "",
     uploaderName: "",
-    file: null,
+    files: [],
   });
   const [hostForm, setHostForm] = useState<HostForm>({
     title: "",
@@ -732,13 +732,7 @@ export function BirthdayApp() {
   async function handleUpload(eventForm: FormEvent<HTMLFormElement>) {
     eventForm.preventDefault();
 
-    if (!hasSupabaseClientEnv || !uploadForm.file) {
-      return;
-    }
-
-    const extension = uploadForm.file.name.split(".").pop()?.toLowerCase();
-    if (!extension) {
-      setNotice({ message: "Choose a JPG, PNG, HEIC, or WEBP image.", tone: "error" });
+    if (!hasSupabaseClientEnv || uploadForm.files.length === 0) {
       return;
     }
 
@@ -746,41 +740,52 @@ export function BirthdayApp() {
 
     try {
       const supabase = getSupabaseClient();
-      const response = await fetch(`${functionsBaseUrl}/guest-upload`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          event_code: uploadForm.eventCode.trim(),
-          pin: uploadForm.pin.trim(),
-          uploader_display_name: uploadForm.uploaderName.trim() || undefined,
-          file_ext: extension,
-        }),
-      });
+      let lastStatus: GuestUploadResponse["status"] = "approved";
 
-      const data = (await response.json()) as GuestUploadResponse & { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to prepare upload.");
-      }
+      for (const file of uploadForm.files) {
+        const extension = file.name.split(".").pop()?.toLowerCase();
+        if (!extension) {
+          throw new Error("Choose JPG, PNG, HEIC, or WEBP images only.");
+        }
 
-      const uploadResult = await supabase.storage
-        .from("event-photos")
-        .uploadToSignedUrl(data.storage_path, data.token, uploadForm.file);
+        const response = await fetch(`${functionsBaseUrl}/guest-upload`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            event_code: uploadForm.eventCode.trim(),
+            pin: uploadForm.pin.trim(),
+            uploader_display_name: uploadForm.uploaderName.trim() || undefined,
+            file_ext: extension,
+          }),
+        });
 
-      if (uploadResult.error) {
-        throw new Error(uploadResult.error.message);
+        const data = (await response.json()) as GuestUploadResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to prepare upload.");
+        }
+
+        const uploadResult = await supabase.storage
+          .from("event-photos")
+          .uploadToSignedUrl(data.storage_path, data.token, file);
+
+        if (uploadResult.error) {
+          throw new Error(uploadResult.error.message);
+        }
+
+        lastStatus = data.status;
       }
 
       setUploadForm((current) => ({
         ...current,
-        file: null,
+        files: [],
       }));
       setNotice({
         message:
-          data.status === "pending"
-            ? "Photo uploaded. It is waiting for host approval."
-            : "Photo uploaded and visible in the gallery.",
+          lastStatus === "pending"
+            ? `${uploadForm.files.length} photo${uploadForm.files.length === 1 ? "" : "s"} uploaded. They are waiting for host approval.`
+            : `${uploadForm.files.length} photo${uploadForm.files.length === 1 ? "" : "s"} uploaded and visible in the gallery.`,
         tone: "success",
       });
 
@@ -798,8 +803,8 @@ export function BirthdayApp() {
   }
 
   function handleFileChange(eventFile: ChangeEvent<HTMLInputElement>) {
-    const nextFile = eventFile.target.files?.[0] || null;
-    setUploadForm((current) => ({ ...current, file: nextFile }));
+    const nextFiles = Array.from(eventFile.target.files || []);
+    setUploadForm((current) => ({ ...current, files: nextFiles }));
   }
 
   async function handleModeration(photoId: string, action: ModerationAction) {
@@ -1086,18 +1091,28 @@ export function BirthdayApp() {
                 />
               </label>
               <label className="field">
-                <span>Photo</span>
-                <input accept=".jpg,.jpeg,.png,.heic,.webp,image/*" onChange={handleFileChange} type="file" />
+                <span>Photos</span>
+                <input
+                  accept=".jpg,.jpeg,.png,.heic,.webp,image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  type="file"
+                />
               </label>
+              {uploadForm.files.length > 0 ? (
+                <p className="inline-note">
+                  {uploadForm.files.length} photo{uploadForm.files.length === 1 ? "" : "s"} selected.
+                </p>
+              ) : null}
               <button
                 className="button button-primary"
-                disabled={uploadBusy || !hasSupabaseClientEnv || !uploadForm.file}
+                disabled={uploadBusy || !hasSupabaseClientEnv || uploadForm.files.length === 0}
               >
-                {uploadBusy ? "Uploading..." : "Send Memory"}
+                {uploadBusy ? "Uploading..." : "Send Memories"}
               </button>
             </form>
             <p className="inline-note">
-              Guests can upload in seconds from their phones. If moderation is on, the family will
+              Guests can upload one or many photos in seconds from their phones. If moderation is on, the family will
               {" review before it appears in Vaayu's gallery."}
             </p>
           </article>
