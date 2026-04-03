@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" fill="none">
+  <rect width="900" height="1200" rx="40" fill="#FFF8F2"/>
+  <circle cx="128" cy="108" r="128" fill="#FFE6C7"/>
+  <circle cx="826" cy="168" r="156" fill="#F4C38E" fill-opacity="0.45"/>
+  <rect x="54" y="52" width="792" height="1096" rx="32" fill="white" stroke="rgba(29,26,23,0.12)"/>
+  <text x="100" y="132" fill="#6F665E" font-family="Avenir Next, Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="5">BIRTHDAY PHOTO APP</text>
+  <text x="100" y="236" fill="#1D1A17" font-family="Georgia, serif" font-size="72" font-weight="700">Share your</text>
+  <text x="100" y="316" fill="#1D1A17" font-family="Georgia, serif" font-size="72" font-weight="700">photos from</text>
+  <text x="100" y="396" fill="#1D1A17" font-family="Georgia, serif" font-size="72" font-weight="700">the party.</text>
+  <text x="100" y="462" fill="#6F665E" font-family="Avenir Next, Arial, sans-serif" font-size="28">Scan the code, open the upload page, and send photos straight from your phone.</text>
+  <rect x="230" y="520" width="440" height="440" rx="28" fill="#FFF4E8" stroke="#F4C38E"/>
+  <image href="guest-upload-qr.png" x="280" y="570" width="340" height="340"/>
+  <text x="450" y="1008" text-anchor="middle" fill="#6F665E" font-family="Avenir Next, Arial, sans-serif" font-size="24">Scan to open the guest upload screen</text>
+  <text x="160" y="1078" fill="#6F665E" font-family="Avenir Next, Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="3">EVENT CODE</text>
+  <rect x="160" y="1096" width="250" height="58" rx="16" fill="#FFF6ED" stroke="#F4C38E"/>
+  <text x="285" y="1135" text-anchor="middle" fill="#1D1A17" font-family="Avenir Next, Arial, sans-serif" font-size="30" font-weight="700">VAAYU</text>
+  <text x="500" y="1078" fill="#6F665E" font-family="Avenir Next, Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="3">PIN</text>
+  <rect x="500" y="1096" width="240" height="58" rx="16" fill="#FFF6ED" stroke="#F4C38E"/>
+  <text x="620" y="1135" text-anchor="middle" fill="#1D1A17" font-family="Avenir Next, Arial, sans-serif" font-size="30" font-weight="700">2905</text>
+</svg>

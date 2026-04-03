@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guest Photo Upload</title>
+    <style>
+      :root {
+        --bg: #fff7ef;
+        --ink: #1d1a17;
+        --muted: #6f665e;
+        --accent: #d96b3b;
+        --accent-soft: #f4c38e;
+        --line: rgba(29, 26, 23, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, rgba(255, 226, 182, 0.75), transparent 30%),
+          linear-gradient(180deg, #fffaf4 0%, var(--bg) 100%);
+      }
+
+      .poster {
+        width: min(900px, calc(100% - 48px));
+        margin: 32px auto;
+        padding: 36px;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        background: rgba(255, 252, 247, 0.96);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        font-size: 13px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(40px, 6vw, 72px);
+        line-height: 0.95;
+      }
+
+      .subtitle {
+        margin: 18px 0 0;
+        max-width: 36rem;
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 28px;
+        margin-top: 28px;
+      }
+
+      .panel {
+        padding: 24px;
+        border-radius: 24px;
+        border: 1px solid var(--line);
+        background: white;
+      }
+
+      .steps {
+        display: grid;
+        gap: 14px;
+      }
+
+      .step {
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 14px;
+        align-items: start;
+      }
+
+      .step-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: white;
+        font-weight: 700;
+      }
+
+      .step strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .step p,
+      .detail,
+      .note {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .qr-wrap {
+        text-align: center;
+      }
+
+      .qr-wrap img {
+        width: min(100%, 320px);
+        height: auto;
+        margin: 0 auto 18px;
+        display: block;
+        border-radius: 18px;
+        border: 10px solid #fff;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+      }
+
+      .detail-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .detail-label {
+        display: block;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .detail-value {
+        display: block;
+        min-height: 34px;
+        margin-top: 4px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: #fff6ed;
+        border: 1px dashed var(--accent-soft);
+        font-weight: 700;
+      }
+
+      .note {
+        margin-top: 18px;
+        font-size: 14px;
+      }
+
+      @media print {
+        body {
+          background: white;
+        }
+
+        .poster {
+          width: 100%;
+          margin: 0;
+          border: 0;
+          border-radius: 0;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .poster {
+          width: min(100% - 24px, 900px);
+          padding: 20px;
+        }
+
+        .layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="poster">
+      <p class="eyebrow">Birthday Photo App</p>
+      <h1>Share your photos from the party.</h1>
+      <p class="subtitle">
+        Scan the code, enter the event details, and upload your pictures straight from your phone.
+      </p>
+
+      <section class="layout">
+        <article class="panel">
+          <div class="steps">
+            <div class="step">
+              <span class="step-number">1</span>
+              <div>
+                <strong>Scan the QR code</strong>
+                <p>Open the upload page on your phone camera or browser.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">2</span>
+              <div>
+                <strong>Enter the event code and PIN</strong>
+                <p>Ask the host if you do not have them yet.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">3</span>
+              <div>
+                <strong>Choose photos</strong>
+                <p>Add your name if you want, then pick photos from your phone.</p>
+              </div>
+            </div>
+            <div class="step">
+              <span class="step-number">4</span>
+              <div>
+                <strong>Tap Send photo</strong>
+                <p>Your photos will upload instantly. Some events may require host approval first.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <aside class="panel qr-wrap">
+          <img src="/guest-upload-qr.png" alt="Guest upload QR code" />
+          <p class="detail">Scan to open the guest upload screen</p>
+
+          <div class="detail-list">
+            <div>
+              <span class="detail-label">Event Code</span>
+              <span class="detail-value">________________</span>
+            </div>
+            <div>
+              <span class="detail-label">PIN</span>
+              <span class="detail-value">________________</span>
+            </div>
+          </div>
+
+          <p class="note">
+            Upload page: <strong>birthday-photo-app.vercel.app/upload</strong>
+          </p>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

@@ -60,16 +60,28 @@ type DashboardData = {
   queue: PhotoCard[];
 };
 
+const highlightMoments = [
+  { title: "First smile", note: "Tiny giggles and bright eyes", orbit: "Orbit 01" },
+  { title: "First steps", note: "A year of little milestones", orbit: "Orbit 02" },
+  { title: "Birthday glow", note: "Celebrating Vaayu's big day", orbit: "Orbit 03" },
+];
+
+const messageIdeas = [
+  "Share the photo that feels most like Vaayu's sunshine.",
+  "Add your favorite candid moment from the celebration.",
+  "Capture the little details the family will want to remember.",
+];
+
 const screens: ScreenConfig[] = [
   { key: "home", href: "/", label: "Home" },
   { key: "auth", href: "/auth", label: "Sign in" },
   { key: "host", href: "/host", label: "Host" },
   { key: "join", href: "/join", label: "Join event" },
-  { key: "upload", href: "/upload", label: "Upload" },
+  { key: "upload", href: "/upload", label: "Share" },
   { key: "gallery", href: "/gallery", label: "Gallery" },
   { key: "admin", href: "/admin", label: "Moderation" },
   { key: "profile", href: "/profile", label: "Profile" },
-  { key: "photos-of-me", href: "/photos-of-me", label: "Photos of me" },
+  { key: "photos-of-me", href: "/photos-of-me", label: "Vaayu" },
 ];
 
 const screenByPathname = new Map<string, ScreenKey>(screens.map((screen) => [screen.href, screen.key]));
@@ -191,18 +203,32 @@ function AppFrame({
   activeEvent: string;
   signedInAs: string;
 }) {
+  const bottomNavScreens = screens.filter((screen) =>
+    ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key),
+  );
+
   return (
     <main className="page-shell app-shell">
       <section className="hero app-hero">
         <div className="hero-copy">
-          <p className="eyebrow">Birthday Photo App</p>
-          <h1>Fast party photo sharing, split into clear screens.</h1>
+          <div className="hero-orbit">{"Vaayu's 1 Year Around the Sun"}</div>
+          <p className="eyebrow">First Birthday Memory Space</p>
+          <h1>One beautiful trip around the sun, shared with the people who love Vaayu most.</h1>
           <p className="hero-text">
-            Guests upload in seconds. Members join with code and PIN. Hosts review pending photos
-            without digging through one giant page.
+            A warm, image-led celebration space where family and friends can share memories, browse
+            {" the day, and keep Vaayu's first birthday story together in one place."}
           </p>
+          <div className="hero-actions">
+            <Link className="button button-primary" href="/upload">
+              Share a Memory
+            </Link>
+            <Link className="button button-secondary" href="/gallery">
+              View the Gallery
+            </Link>
+          </div>
         </div>
         <div className="hero-panel">
+          <div className="sun-badge">Around the Sun</div>
           <div className="stat-row">
             <span className="stat-kicker">Current screen</span>
             <strong>{screens.find((screen) => screen.key === currentScreen)?.label || "Home"}</strong>
@@ -219,7 +245,7 @@ function AppFrame({
         </div>
       </section>
 
-      <nav className="route-nav" aria-label="Primary">
+      <nav className="route-nav route-nav-top" aria-label="Primary">
         {screens.map((screen) => (
           <Link
             key={screen.key}
@@ -231,43 +257,122 @@ function AppFrame({
         ))}
       </nav>
 
-      {children}
+      <div className="screen-content">{children}</div>
+
+      <nav className="bottom-nav" aria-label="Bottom navigation">
+        {bottomNavScreens.map((screen) => (
+          <Link
+            key={screen.key}
+            className={`bottom-nav-link ${screen.key === currentScreen ? "bottom-nav-link-active" : ""}`}
+            href={screen.href}
+          >
+            <span className="bottom-nav-dot" />
+            {screen.label}
+          </Link>
+        ))}
+      </nav>
     </main>
   );
 }
 
-function HomeScreen() {
+function HomeScreen({ galleryPreview, activeEvent }: { galleryPreview: PhotoCard[]; activeEvent: string }) {
   return (
-    <section className="content-section route-section">
-      <div className="section-heading">
-        <div>
-          <p className="section-label">Overview</p>
-          <h2>Choose the screen that matches the job.</h2>
+    <>
+      <section className="content-section route-section event-intro">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Welcome</p>
+            <h2>{"Welcome to Vaayu's first trip around the sun."}</h2>
+          </div>
         </div>
-      </div>
-      <div className="route-grid">
-        <Link className="card route-card" href="/auth">
-          <p className="section-label">1</p>
-          <h2>Sign in</h2>
-          <p>Hosts and members authenticate here with email and password.</p>
-        </Link>
-        <Link className="card route-card" href="/join">
-          <p className="section-label">2</p>
-          <h2>Join event</h2>
-          <p>Members unlock the gallery with an event code and PIN.</p>
-        </Link>
-        <Link className="card route-card" href="/upload">
-          <p className="section-label">3</p>
-          <h2>Guest upload</h2>
-          <p>Party guests can upload without creating an account.</p>
-        </Link>
-        <Link className="card route-card" href="/gallery">
-          <p className="section-label">4</p>
-          <h2>Shared gallery</h2>
-          <p>Members browse approved photos only.</p>
-        </Link>
-      </div>
-    </section>
+        <div className="intro-grid">
+          <article className="card intro-story">
+            <p className="intro-copy">
+              A whole year of love, laughter, sleepy cuddles, and tiny milestones led to this day.
+              {"Thank you for being part of Vaayu's celebration and helping the family keep every warm"}
+              {" little memory close."}
+            </p>
+            <div className="event-badges">
+              <span className="pill">Mobile-first sharing</span>
+              <span className="pill">{activeEvent}</span>
+              <span className="pill">Family & friends only</span>
+            </div>
+          </article>
+          <article className="card orbit-callout">
+            <p className="section-label">What to do</p>
+            <h2>Share a memory, browse the gallery, and celebrate the little moments.</h2>
+            <div className="orbit-mini-list">
+              {messageIdeas.map((idea) => (
+                <p key={idea}>{idea}</p>
+              ))}
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section className="content-section route-section">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Around the Sun</p>
+            <h2>{"Highlight the milestones that shaped Vaayu's first year."}</h2>
+          </div>
+        </div>
+        <div className="highlight-strip">
+          {highlightMoments.map((item) => (
+            <article className="highlight-card" key={item.title}>
+              <div className="highlight-orbit">{item.orbit}</div>
+              <h3>{item.title}</h3>
+              <p>{item.note}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="content-section route-section">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Memory Feed Preview</p>
+            <h2>Image-first, warm, and easy to browse on mobile.</h2>
+          </div>
+        </div>
+        <div className="photo-grid">
+          {galleryPreview.map((item) => (
+            <article className="photo-card" key={item.id}>
+              <div className="photo-frame">
+                {item.imageUrl ? (
+                  <Image alt={item.title} fill sizes="(max-width: 960px) 100vw, 33vw" src={item.imageUrl} unoptimized />
+                ) : (
+                  <div className="photo-fallback" />
+                )}
+                <div className="photo-glow" />
+              </div>
+              <div className="photo-copy">
+                <div className="photo-copy-top">
+                  <h3>{item.title}</h3>
+                  <span className={`status status-${item.status}`}>{item.status}</span>
+                </div>
+                <p>{item.subtitle}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="content-section route-section">
+        <div className="route-grid">
+          <Link className="card route-card celebration-card" href="/upload">
+            <p className="section-label">Share a Memory</p>
+            <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
+            <p>Fast, mobile-friendly, and designed for guests to use in seconds.</p>
+          </Link>
+          <Link className="card route-card celebration-card" href="/photos-of-me">
+            <p className="section-label">Keepsakes</p>
+            <h2>Photos of Vaayu and messages for later.</h2>
+            <p>Future keepsake spaces will live here as the memory book grows.</p>
+          </Link>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -712,6 +817,7 @@ export function BirthdayApp() {
 
   const activeEventLabel = event?.title || "Join an event to unlock the dashboard";
   const signedInAs = session?.user?.email || "Anonymous guest";
+  const homeGalleryPreview = gallery.length > 0 ? gallery.slice(0, 3) : demoGallery;
 
   return (
     <AppFrame
@@ -720,15 +826,15 @@ export function BirthdayApp() {
       notice={notice}
       signedInAs={signedInAs}
     >
-      {currentScreen === "home" ? <HomeScreen /> : null}
+      {currentScreen === "home" ? <HomeScreen activeEvent={activeEventLabel} galleryPreview={homeGalleryPreview} /> : null}
 
       {currentScreen === "auth" ? (
         <section className="content-section route-section">
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Auth</p>
-                <h2>Sign in or create your account</h2>
+                <p className="section-label">Family Access</p>
+                <h2>{"Step into Vaayu's memory space."}</h2>
               </div>
               {session?.user ? (
                 <button className="button button-secondary" onClick={handleSignOut} type="button">
@@ -778,6 +884,10 @@ export function BirthdayApp() {
                 </button>
               </div>
             </form>
+            <p className="inline-note">
+              {"Parents, close family, and invited guests can sign in here to unlock Vaayu's shared"}
+              {" memory feed."}
+            </p>
           </article>
         </section>
       ) : null}
@@ -787,8 +897,8 @@ export function BirthdayApp() {
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Host setup</p>
-                <h2>Create a new event</h2>
+                <p className="section-label">Host Setup</p>
+                <h2>{"Create Vaayu's celebration space."}</h2>
               </div>
               <span className="pill">{session?.user ? "Ready" : "Sign in required"}</span>
             </div>
@@ -800,7 +910,7 @@ export function BirthdayApp() {
                   onChange={(eventInput) =>
                     setHostForm((current) => ({ ...current, title: eventInput.target.value }))
                   }
-                  placeholder="Ava's 5th Birthday"
+                  placeholder="Vaayu's 1 Year Around the Sun"
                   value={hostForm.title}
                 />
               </label>
@@ -846,7 +956,7 @@ export function BirthdayApp() {
             </form>
 
             {!session?.user ? (
-              <p className="inline-note">Sign in first, then come back here to create your event.</p>
+              <p className="inline-note">{"Sign in first, then come back here to create Vaayu's event."}</p>
             ) : event ? (
               <div className="host-summary">
                 <p className="section-label">Current event</p>
@@ -864,8 +974,8 @@ export function BirthdayApp() {
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Member flow</p>
-                <h2>Join with event code and PIN</h2>
+                <p className="section-label">Join the Celebration</p>
+                <h2>{"Enter Vaayu's event code and PIN to step into the memory feed."}</h2>
               </div>
               <span className="pill">{session?.user ? "Signed in" : "Auth required"}</span>
             </div>
@@ -897,7 +1007,7 @@ export function BirthdayApp() {
             </form>
             {!session?.user ? (
               <p className="inline-note">
-                You need an account before joining an event. Use the sign-in screen first.
+                {"You need an account before joining Vaayu's event. Use the sign-in screen first."}
               </p>
             ) : null}
           </article>
@@ -909,8 +1019,8 @@ export function BirthdayApp() {
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Guest upload</p>
-                <h2>Upload without creating an account</h2>
+                <p className="section-label">Share a Memory</p>
+                <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
               </div>
               <span className="pill">
                 {event?.moderation_required ? "Host approval enabled" : "Auto-approve event"}
@@ -959,9 +1069,13 @@ export function BirthdayApp() {
                 className="button button-primary"
                 disabled={uploadBusy || !hasSupabaseClientEnv || !uploadForm.file}
               >
-                {uploadBusy ? "Uploading..." : "Send photo"}
+                {uploadBusy ? "Uploading..." : "Send Memory"}
               </button>
             </form>
+            <p className="inline-note">
+              Guests can upload in seconds from their phones. If moderation is on, the family will
+              {" review before it appears in Vaayu's gallery."}
+            </p>
           </article>
         </section>
       ) : null}
@@ -970,8 +1084,8 @@ export function BirthdayApp() {
         <section className="content-section route-section">
           <div className="section-heading">
             <div>
-              <p className="section-label">Shared gallery</p>
-              <h2>Approved photos only</h2>
+              <p className="section-label">Memory Feed</p>
+              <h2>{"See the moments that made Vaayu's celebration so special."}</h2>
             </div>
             {event?.id && session?.user ? (
               <button
@@ -985,13 +1099,23 @@ export function BirthdayApp() {
             ) : null}
           </div>
 
+          <div className="highlight-strip feed-highlights">
+            {highlightMoments.map((item) => (
+              <article className="highlight-card compact" key={item.title}>
+                <div className="highlight-orbit">{item.orbit}</div>
+                <h3>{item.title}</h3>
+                <p>{item.note}</p>
+              </article>
+            ))}
+          </div>
+
           {gallery.length === 0 ? (
             <div className="empty-state">
-              <h3>No photos yet</h3>
+              <h3>{"Vaayu's memory feed is waiting for its first photo."}</h3>
               <p>
                 {session?.user
-                  ? "Join an event to load the gallery, or upload the first image as a guest."
-                  : "Sign in and join an event to unlock the shared gallery."}
+                  ? "Join the event to unlock the feed, or share the first memory as a guest."
+                  : "Sign in and join the celebration to unlock Vaayu's shared gallery."}
               </p>
             </div>
           ) : (
@@ -1004,6 +1128,7 @@ export function BirthdayApp() {
                     ) : (
                       <div className="photo-fallback" />
                     )}
+                    <div className="photo-glow" />
                   </div>
                   <div className="photo-copy">
                     <div className="photo-copy-top">
@@ -1023,8 +1148,8 @@ export function BirthdayApp() {
         <section className="content-section route-section">
           <div className="section-heading">
             <div>
-              <p className="section-label">Admin moderation</p>
-              <h2>Pending review queue</h2>
+              <p className="section-label">Host Review</p>
+              <h2>{"Review memories before they appear in Vaayu's gallery."}</h2>
             </div>
             <span className="pill">{isAdmin ? "Admin access" : "Read-only placeholder"}</span>
           </div>
@@ -1088,7 +1213,7 @@ export function BirthdayApp() {
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Profile</p>
+                <p className="section-label">Your Space</p>
                 <h2>{welcomeLabel}</h2>
               </div>
               <span className="pill">{member?.role || "guest-only"}</span>
@@ -1104,7 +1229,7 @@ export function BirthdayApp() {
               </div>
               <div>
                 <dt>My photos</dt>
-                <dd>Photos-of-me matching is intentionally a placeholder in this phase.</dd>
+                <dd>{"Your shared access to Vaayu's memory space will grow here over time."}</dd>
               </div>
             </dl>
             {!session?.user ? (
@@ -1118,11 +1243,11 @@ export function BirthdayApp() {
 
       {currentScreen === "photos-of-me" ? (
         <section className="content-section placeholder-panel route-section">
-          <p className="section-label">Photos of me</p>
-          <h2>Placeholder only for this phase</h2>
+          <p className="section-label">Vaayu Keepsakes</p>
+          <h2>Photos of Vaayu, milestone moments, and messages are coming soon.</h2>
           <p>
-            The UX keeps this destination visible, but face matching is not implemented and the backend
-            contract does not expose a search flow yet.
+            This space will grow into a keepsake corner for milestone moments, favorite portraits,
+            {" and family notes saved for Vaayu's future memory book."}
           </p>
         </section>
       ) : null}
