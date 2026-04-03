@@ -1,12 +1,12 @@
 :root {
-  --bg: #fff7ef;
+  --bg: #fff8f4;
   --bg-warm: #ffd58e;
   --bg-sky: #dff1ff;
   --glow: rgba(255, 205, 111, 0.42);
   --orbit: #f6b04e;
-  --orbit-deep: #f38c57;
-  --ink: #241b17;
-  --muted: #74685f;
+  --orbit-deep: #ec775b;
+  --ink: #2f395f;
+  --muted: #68708b;
   --line: rgba(36, 27, 23, 0.1);
   --surface: rgba(255, 252, 246, 0.94);
   --surface-strong: #fffdf9;
@@ -32,10 +32,10 @@ body {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(255, 230, 184, 0.92), transparent 26%),
+    radial-gradient(circle at top left, rgba(247, 207, 174, 0.75), transparent 24%),
     radial-gradient(circle at top right, rgba(223, 241, 255, 0.9), transparent 24%),
-    radial-gradient(circle at 50% 0%, rgba(255, 206, 117, 0.3), transparent 30%),
-    linear-gradient(180deg, #fff9f2 0%, #fff4ea 45%, #fef9f3 100%);
+    radial-gradient(circle at 50% 0%, rgba(255, 206, 117, 0.22), transparent 28%),
+    linear-gradient(180deg, #fffaf5 0%, #fff3ee 45%, #fff8f3 100%);
   color: var(--ink);
   font-family: var(--font-body), "Avenir Next", "Segoe UI", sans-serif;
 }
@@ -106,9 +106,9 @@ img {
   isolation: isolate;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(255, 230, 170, 0.95), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(223, 241, 255, 0.78), transparent 30%),
-    linear-gradient(180deg, rgba(255, 251, 246, 0.96) 0%, rgba(255, 243, 232, 0.92) 100%),
+    radial-gradient(circle at top right, rgba(248, 214, 185, 0.9), transparent 32%),
+    radial-gradient(circle at bottom left, rgba(223, 241, 255, 0.72), transparent 30%),
+    linear-gradient(180deg, rgba(255, 249, 245, 0.98) 0%, rgba(255, 240, 235, 0.94) 100%),
     var(--surface);
 }
 
@@ -126,7 +126,7 @@ img {
   width: 220px;
   height: 220px;
   border-radius: 999px;
-  border: 1px dashed rgba(243, 140, 87, 0.34);
+  border: 1px dashed rgba(236, 119, 91, 0.3);
 }
 
 .hero-copy::after {
@@ -137,6 +137,15 @@ img {
   height: 320px;
   border-radius: 999px;
   background: radial-gradient(circle, var(--glow), transparent 70%);
+}
+
+.hero-opening .hero-copy {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  min-height: 680px;
+  padding-top: 34px;
+  padding-bottom: 34px;
 }
 
 .parallax-orbit {
@@ -228,6 +237,75 @@ img {
 .parallax-stars span:nth-child(6) {
   top: 244px;
   left: 77%;
+}
+
+.opening-collage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 0.9fr 1fr 0.9fr;
+  gap: 12px;
+  width: min(100%, 450px);
+  margin: 12px auto 26px;
+}
+
+.collage-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  min-height: 112px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 229, 178, 0.85), transparent 40%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(247, 220, 213, 0.9));
+  border: 6px solid rgba(255, 255, 255, 0.84);
+  box-shadow: 0 18px 40px rgba(96, 78, 104, 0.15);
+}
+
+.collage-tile img {
+  object-fit: cover;
+}
+
+.collage-placeholder {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 22% 24%, rgba(255, 211, 141, 0.95), transparent 18%),
+    radial-gradient(circle at 76% 22%, rgba(118, 172, 224, 0.22), transparent 16%),
+    linear-gradient(180deg, rgba(255, 240, 236, 0.95), rgba(255, 225, 214, 0.95));
+}
+
+.collage-placeholder::before,
+.collage-placeholder::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.collage-placeholder::before {
+  inset: auto 14px 18px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.collage-placeholder::after {
+  width: 64px;
+  height: 64px;
+  right: 14px;
+  top: 18px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.collage-tile-tall {
+  min-height: 156px;
+}
+
+.collage-tile-wide {
+  min-height: 136px;
+  grid-column: span 2;
+}
+
+.collage-tile-small {
+  min-height: 96px;
 }
 
 .birthday-cake {
@@ -660,6 +738,10 @@ img {
     var(--surface);
 }
 
+.opening-note {
+  text-align: center;
+}
+
 .guest-home {
   margin-top: 0;
   background:
@@ -738,8 +820,8 @@ img {
   border-radius: 24px;
   border: 1px solid rgba(36, 27, 23, 0.08);
   background:
-    radial-gradient(circle at top right, rgba(255, 214, 144, 0.58), transparent 35%),
-    rgba(255, 255, 255, 0.72);
+    radial-gradient(circle at top right, rgba(255, 214, 144, 0.45), transparent 35%),
+    linear-gradient(180deg, rgba(255, 250, 247, 0.92), rgba(255, 244, 239, 0.78));
 }
 
 .highlight-card h3,
@@ -885,7 +967,8 @@ img {
   overflow: hidden;
   border: 1px solid rgba(36, 27, 23, 0.08);
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.78);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 246, 242, 0.86));
+  box-shadow: 0 18px 38px rgba(91, 66, 63, 0.08);
 }
 
 .photo-frame,
@@ -1002,7 +1085,7 @@ img {
   width: min(680px, calc(100% - 20px));
   padding: 10px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   z-index: 20;
 }
@@ -1018,7 +1101,7 @@ img {
 }
 
 .bottom-nav-link-active {
-  background: rgba(255, 214, 144, 0.28);
+  background: linear-gradient(180deg, rgba(255, 217, 150, 0.46), rgba(247, 195, 168, 0.36));
   color: var(--ink);
 }
 
@@ -1103,6 +1186,20 @@ img {
 
   .hero-copy {
     padding-bottom: 230px;
+  }
+
+  .hero-opening .hero-copy {
+    min-height: 620px;
+    padding-bottom: 32px;
+  }
+
+  .opening-collage {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .collage-tile {
+    border-radius: 22px;
   }
 
   .button,

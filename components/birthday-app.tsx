@@ -50,7 +50,17 @@ type HostForm = {
   moderationRequired: boolean;
 };
 
-type ScreenKey = "home" | "auth" | "host" | "join" | "upload" | "gallery" | "admin" | "profile" | "photos-of-me";
+type ScreenKey =
+  | "home"
+  | "auth"
+  | "host"
+  | "join"
+  | "upload"
+  | "gallery"
+  | "event"
+  | "admin"
+  | "profile"
+  | "photos-of-me";
 
 type ScreenConfig = {
   key: ScreenKey;
@@ -91,8 +101,9 @@ const screens: ScreenConfig[] = [
   { key: "auth", href: "/auth", label: "Sign in" },
   { key: "host", href: "/host", label: "Host" },
   { key: "join", href: "/join", label: "Join event" },
-  { key: "upload", href: "/upload", label: "Share" },
   { key: "gallery", href: "/gallery", label: "Gallery" },
+  { key: "upload", href: "/upload", label: "Upload" },
+  { key: "event", href: "/event", label: "Event" },
   { key: "admin", href: "/admin", label: "Moderation" },
   { key: "profile", href: "/profile", label: "Profile" },
   { key: "photos-of-me", href: "/photos-of-me", label: "Vaayu" },
@@ -211,9 +222,8 @@ function AppFrame({
   activeEvent,
   signedInAs,
   visibleScreens,
-  guestGalleryHref,
-  guestUploadHref,
   compactGuestShell,
+  openingPhotos,
   publicLanding,
 }: {
   children: ReactNode;
@@ -222,71 +232,64 @@ function AppFrame({
   activeEvent: string;
   signedInAs: string;
   visibleScreens: ScreenConfig[];
-  guestGalleryHref: string;
-  guestUploadHref: string;
   compactGuestShell: boolean;
+  openingPhotos: string[];
   publicLanding: boolean;
 }) {
+  const collageSlots = openingPhotos.slice(0, 6);
+
   return (
     <main className="page-shell app-shell">
-      <section className={`hero app-hero ${compactGuestShell ? "hero-public" : ""}`}>
+      <section
+        className={`hero app-hero ${compactGuestShell ? "hero-public" : ""} ${publicLanding ? "hero-opening" : ""}`}
+      >
         <div className="hero-copy">
           {publicLanding ? (
-            <div className="hero-parallax" aria-hidden="true">
-              <div className="parallax-orbit parallax-orbit-back" />
-              <div className="parallax-orbit parallax-orbit-mid" />
-              <div className="parallax-ribbons">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="parallax-stars">
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="balloon-cluster balloon-left">
-                <span className="balloon balloon-gold" />
-                <span className="balloon balloon-cream" />
-              </div>
-              <div className="balloon-cluster balloon-right">
-                <span className="balloon balloon-sky" />
-                <span className="balloon balloon-apricot" />
-              </div>
-              <div className="birthday-cake">
-                <div className="cake-candle candle-one">
-                  <span className="candle-flame" />
-                </div>
-                <div className="cake-candle candle-two">
-                  <span className="candle-flame" />
-                </div>
-                <div className="cake-candle candle-three">
-                  <span className="candle-flame" />
-                </div>
-                <div className="cake-top" />
-                <div className="cake-middle" />
-                <div className="cake-bottom" />
-                <div className="cake-plate" />
-              </div>
-            </div>
+            <div className="hero-parallax" aria-hidden="true" />
           ) : null}
-          <div className="hero-orbit">{"Vaayu's 1 Year Around the Sun"}</div>
-          <p className="eyebrow">First Birthday Memory Space</p>
-          <h1>One beautiful trip around the sun, shared with the people who love Vaayu most.</h1>
-          <p className="hero-text">
-            A warm, image-led celebration space where family and friends can share memories, browse
-            {" the day, and keep Vaayu's first birthday story together in one place."}
-          </p>
           {publicLanding ? (
-            <div className="hero-memory-tags">
-              <span className="memory-tag">Candles</span>
-              <span className="memory-tag">Cake</span>
-              <span className="memory-tag">Family photos</span>
-            </div>
-          ) : null}
+            <>
+              <div className="opening-collage" aria-hidden="true">
+                {[0, 1, 2, 3, 4, 5].map((slot) => (
+                  <div
+                    className={`collage-tile ${
+                      ["collage-tile-tall", "collage-tile-square", "collage-tile-wide", "collage-tile-small"][slot % 4]
+                    }`}
+                    key={slot}
+                  >
+                    {collageSlots[slot] ? (
+                      <Image
+                        alt=""
+                        fill
+                        sizes="160px"
+                        src={collageSlots[slot]}
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="collage-placeholder" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="hero-orbit">{"Vaayu's 1st Birthday"}</div>
+              <p className="eyebrow">1 Year Around the Sun</p>
+              <h1>Loading Vaayu&apos;s birthday memories.</h1>
+              <p className="hero-text">
+                A year of little moments led to this beautiful day. Step into Vaayu&apos;s gallery to see
+                the celebration unfold.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="hero-orbit">{"Vaayu's 1st Birthday"}</div>
+              <p className="eyebrow">1 Year Around the Sun</p>
+              <h1>Warm memories, little milestones, and one very special birthday.</h1>
+              <p className="hero-text">
+                Browse the family gallery first, then add the moments you captured from Vaayu&apos;s big
+                day.
+              </p>
+            </>
+          )}
         </div>
         {!compactGuestShell ? (
           <div className="hero-panel">
@@ -346,74 +349,23 @@ function AppFrame({
   );
 }
 
-function HomeScreen({
-  guestUploadHref,
-  guestGalleryHref,
-}: {
-  guestUploadHref: string;
-  guestGalleryHref: string;
-}) {
+function HomeScreen() {
   return (
-    <>
-      <section className="content-section route-section event-intro guest-home">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Welcome</p>
-            <h2>{"Welcome to Vaayu's celebration."}</h2>
-          </div>
+    <section className="content-section route-section opening-note">
+      <article className="card">
+        <div className="memory-ribbon" aria-hidden="true">
+          <span className="memory-dot" />
+          <span className="memory-dot" />
+          <span className="memory-dot" />
         </div>
-        <div className="intro-grid">
-          <article className="card intro-story">
-            <div className="memory-ribbon" aria-hidden="true">
-              <span className="memory-dot" />
-              <span className="memory-dot" />
-              <span className="memory-dot" />
-            </div>
-            <p className="intro-copy">
-              Scan, share, and relive the moments from Vaayu&apos;s first birthday. This guest space is
-              built for two things: sending photos quickly and viewing the approved gallery.
-            </p>
-            <div className="event-badges">
-              <span className="pill">Guest access</span>
-              <span className="pill">Upload + gallery only</span>
-              <span className="pill">Family & friends only</span>
-            </div>
-          </article>
-          <article className="card orbit-callout">
-            <p className="section-label">Choose One</p>
-            <h2>Share photos from your phone or browse Vaayu&apos;s gallery.</h2>
-            <div className="orbit-mini-list">
-              <p>Upload one or many photos in a few taps.</p>
-              <p>View the approved moments from Vaayu&apos;s big day.</p>
-              <p>Everything else stays private to the family.</p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="content-section route-section">
-        <div className="route-grid">
-          <Link className="card route-card celebration-card" href={guestUploadHref}>
-            <p className="section-label">Share Photos</p>
-            <h2>Upload straight from your phone.</h2>
-            <p>Use the event code and PIN, then send one or many photos in seconds.</p>
-            <div className="card-scene card-scene-upload" aria-hidden="true">
-              <span className="scene-sun" />
-              <span className="scene-cloud" />
-            </div>
-          </Link>
-          <Link className="card route-card celebration-card" href={guestGalleryHref}>
-            <p className="section-label">Gallery</p>
-            <h2>View Vaayu&apos;s gallery.</h2>
-            <p>Browse the approved photos already shared for the celebration.</p>
-            <div className="card-scene card-scene-gallery" aria-hidden="true">
-              <span className="scene-frame" />
-              <span className="scene-star" />
-            </div>
-          </Link>
-        </div>
-      </section>
-    </>
+        <p className="section-label">Opening Album</p>
+        <h2>Gathering Vaayu&apos;s celebration in one place.</h2>
+        <p className="inline-note">
+          The app opens into the gallery first so family and guests see the memories before adding their
+          own.
+        </p>
+      </article>
+    </section>
   );
 }
 
@@ -521,7 +473,12 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   }, [initialGuestAccess]);
 
   function buildGuestHref(path: string) {
-    if (!isGuestFlow || !guestAccess.eventCode || !guestAccess.pin || !["/upload", "/gallery"].includes(path)) {
+    if (
+      !isGuestFlow ||
+      !guestAccess.eventCode ||
+      !guestAccess.pin ||
+      !["/", "/upload", "/gallery", "/event"].includes(path)
+    ) {
       return path;
     }
 
@@ -537,12 +494,26 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const guestGalleryHref = buildGuestHref("/gallery");
   const visibleScreens = (
     isGuestFlow
-      ? screens.filter((screen) => ["upload", "gallery"].includes(screen.key))
+      ? screens.filter((screen) => ["gallery", "upload", "event"].includes(screen.key))
       : screens.filter((screen) => ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key))
   ).map((screen) => ({
     ...screen,
     href: buildGuestHref(screen.href),
   }));
+
+  useEffect(() => {
+    if (!isGuestFlow || currentScreen !== "home") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      router.replace(guestGalleryHref);
+    }, 1600);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [currentScreen, guestGalleryHref, isGuestFlow, router]);
 
   useEffect(() => {
     if (!hasSupabaseClientEnv || !session?.user) {
@@ -595,7 +566,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   }, [dashboardBusy, event?.id, session?.user]);
 
   useEffect(() => {
-    if (!hasSupabaseClientEnv || session?.user || !["upload", "gallery"].includes(currentScreen)) {
+    if (!hasSupabaseClientEnv || session?.user || !["home", "upload", "gallery", "event"].includes(currentScreen)) {
       return;
     }
 
@@ -986,28 +957,25 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     }
   }
 
-  const activeEventLabel = event?.title || "Join an event to unlock the dashboard";
+  const activeEventLabel = event?.title || "Vaayu's 1st Birthday";
   const signedInAs = session?.user?.email || "Anonymous guest";
   const publicLanding = isGuestFlow && currentScreen === "home";
-  const compactGuestShell = isGuestFlow && ["home", "upload", "gallery"].includes(currentScreen);
+  const compactGuestShell = isGuestFlow && ["home", "upload", "gallery", "event"].includes(currentScreen);
+  const openingPhotos = gallery.map((item) => item.imageUrl).filter((item): item is string => Boolean(item));
 
   return (
     <AppFrame
       activeEvent={activeEventLabel}
       compactGuestShell={compactGuestShell}
       currentScreen={currentScreen}
-      guestGalleryHref={guestGalleryHref}
-      guestUploadHref={guestUploadHref}
       notice={notice}
+      openingPhotos={openingPhotos}
       publicLanding={publicLanding}
       signedInAs={signedInAs}
       visibleScreens={visibleScreens}
     >
       {currentScreen === "home" ? (
-        <HomeScreen
-          guestGalleryHref={guestGalleryHref}
-          guestUploadHref={guestUploadHref}
-        />
+        <HomeScreen />
       ) : null}
 
       {guestRestrictedScreen ? (
@@ -1024,11 +992,11 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               out of the guest experience.
             </p>
             <div className="button-row">
-              <Link className="button button-primary" href={guestUploadHref}>
-                Share a Memory
+              <Link className="button button-primary" href={guestGalleryHref}>
+                Open Gallery
               </Link>
-              <Link className="button button-secondary" href={guestGalleryHref}>
-                View Gallery
+              <Link className="button button-secondary" href={guestUploadHref}>
+                Add Photos
               </Link>
             </div>
           </article>
@@ -1226,8 +1194,8 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           <article className="card">
             <div className="card-header">
               <div>
-                <p className="section-label">Share a Memory</p>
-                <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
+                <p className="section-label">Upload</p>
+                <h2>Add your photos for Vaayu.</h2>
               </div>
               {!isGuestFlow ? (
                 <span className="pill">
@@ -1298,7 +1266,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
             <p className="inline-note">
               {event?.moderation_required
                 ? "Guests can upload one or many photos in seconds from their phones. The family will review them before they appear in Vaayu's gallery."
-                : "Guests can upload one or many photos in seconds from their phones. Approved photos appear in Vaayu's gallery right away."}
+                : "Share the moments you captured from Vaayu's big day. Your photos appear in the gallery right away."}
             </p>
           </article>
         </section>
@@ -1308,8 +1276,9 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
         <section className="content-section route-section">
           <div className="section-heading">
             <div>
-              <p className="section-label">Memory Feed</p>
-              <h2>{"See the moments that made Vaayu's celebration so special."}</h2>
+              <p className="section-label">Gallery</p>
+              <h2>Vaayu&apos;s birthday gallery.</h2>
+              <p className="inline-note">The moments that made his first celebration so special.</p>
             </div>
             {event?.id && session?.user ? (
               <button
@@ -1367,6 +1336,46 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               ))}
             </div>
           )}
+        </section>
+      ) : null}
+
+      {currentScreen === "event" ? (
+        <section className="content-section route-section">
+          <article className="card placeholder-panel">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Event</p>
+                <h2>Thanks for celebrating Vaayu.</h2>
+              </div>
+              <span className="pill">Family & friends</span>
+            </div>
+            <p className="inline-note">
+              Your presence and photos mean so much to our family. This little gallery is our keepsake
+              from Vaayu&apos;s first trip around the sun.
+            </p>
+            <dl className="detail-list">
+              <div>
+                <dt>Celebration</dt>
+                <dd>Vaayu&apos;s 1st Birthday</dd>
+              </div>
+              <div>
+                <dt>Theme</dt>
+                <dd>1 Year Around the Sun</dd>
+              </div>
+              <div>
+                <dt>Guest flow</dt>
+                <dd>Browse the gallery first, then add your favorite moments from the day.</dd>
+              </div>
+            </dl>
+            <div className="button-row">
+              <Link className="button button-primary" href={guestGalleryHref}>
+                Open Gallery
+              </Link>
+              <Link className="button button-secondary" href={guestUploadHref}>
+                Add Photos
+              </Link>
+            </div>
+          </article>
         </section>
       ) : null}
 
