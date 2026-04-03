@@ -546,8 +546,21 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     return `${path}?${params.toString()}`;
   }
 
+  function buildModeratorHref() {
+    if (!guestAccess.eventCode) {
+      return "/moderator";
+    }
+
+    const params = new URLSearchParams({
+      event: guestAccess.eventCode,
+    });
+
+    return `/moderator?${params.toString()}`;
+  }
+
   const guestUploadHref = buildGuestHref("/upload");
   const guestGalleryHref = buildGuestHref("/gallery");
+  const moderatorHref = buildModeratorHref();
   const visibleScreens = (
     isGuestFlow
       ? screens.filter((screen) => ["gallery", "upload"].includes(screen.key))
@@ -1577,6 +1590,9 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
 
           <div className="gallery-footer-note">
             <p>Every moment tells a story of love and light 💫</p>
+            <Link className="quiet-manager-link" href={moderatorHref}>
+              Open manager
+            </Link>
           </div>
 
           {isGuestFlow ? (
@@ -1707,6 +1723,9 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
                 Add Photos
               </Link>
             </div>
+            <p className="manager-hint">
+              Need cleanup access? <Link href={moderatorHref}>Open manager</Link>
+            </p>
           </article>
         </section>
       ) : null}
