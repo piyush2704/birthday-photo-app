@@ -406,6 +406,12 @@ entrypoint = "./functions/guest-upload/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/guest-upload/*.html" ]
 
+[functions.guest-gallery]
+enabled = true
+verify_jwt = false
+import_map = "./functions/guest-gallery/deno.json"
+entrypoint = "./functions/guest-gallery/index.ts"
+
 [functions.join-event]
 enabled = true
 verify_jwt = true

@@ -15,6 +15,7 @@ import type {
   CreateEventResponse,
   EventMemberRecord,
   EventRecord,
+  GuestGalleryResponse,
   GuestUploadResponse,
   JoinEventResponse,
   PhotoCard,
@@ -62,6 +63,11 @@ type DashboardData = {
   member: EventMemberRecord | null;
   gallery: PhotoCard[];
   queue: PhotoCard[];
+};
+
+type GuestAccess = {
+  eventCode: string;
+  pin: string;
 };
 
 const highlightMoments = [
@@ -200,17 +206,19 @@ function AppFrame({
   notice,
   activeEvent,
   signedInAs,
+  visibleScreens,
+  guestGalleryHref,
+  guestUploadHref,
 }: {
   children: ReactNode;
   currentScreen: ScreenKey;
   notice: Notice;
   activeEvent: string;
   signedInAs: string;
+  visibleScreens: ScreenConfig[];
+  guestGalleryHref: string;
+  guestUploadHref: string;
 }) {
-  const bottomNavScreens = screens.filter((screen) =>
-    ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key),
-  );
-
   return (
     <main className="page-shell app-shell">
       <section className="hero app-hero">
@@ -223,10 +231,10 @@ function AppFrame({
             {" the day, and keep Vaayu's first birthday story together in one place."}
           </p>
           <div className="hero-actions">
-            <Link className="button button-primary" href="/upload">
+            <Link className="button button-primary" href={guestUploadHref}>
               Share a Memory
             </Link>
-            <Link className="button button-secondary" href="/gallery">
+            <Link className="button button-secondary" href={guestGalleryHref}>
               View the Gallery
             </Link>
           </div>
@@ -250,7 +258,7 @@ function AppFrame({
       </section>
 
       <nav className="route-nav route-nav-top" aria-label="Primary">
-        {screens.map((screen) => (
+        {visibleScreens.map((screen) => (
           <Link
             key={screen.key}
             className={`route-pill ${screen.key === currentScreen ? "route-pill-active" : ""}`}
@@ -263,8 +271,12 @@ function AppFrame({
 
       <div className="screen-content">{children}</div>
 
-      <nav className="bottom-nav" aria-label="Bottom navigation">
-        {bottomNavScreens.map((screen) => (
+      <nav
+        className="bottom-nav"
+        aria-label="Bottom navigation"
+        style={{ gridTemplateColumns: `repeat(${visibleScreens.length}, minmax(0, 1fr))` }}
+      >
+        {visibleScreens.map((screen) => (
           <Link
             key={screen.key}
             className={`bottom-nav-link ${screen.key === currentScreen ? "bottom-nav-link-active" : ""}`}
@@ -279,7 +291,17 @@ function AppFrame({
   );
 }
 
-function HomeScreen({ galleryPreview, activeEvent }: { galleryPreview: PhotoCard[]; activeEvent: string }) {
+function HomeScreen({
+  galleryPreview,
+  activeEvent,
+  guestUploadHref,
+  guestGalleryHref,
+}: {
+  galleryPreview: PhotoCard[];
+  activeEvent: string;
+  guestUploadHref: string;
+  guestGalleryHref: string;
+}) {
   return (
     <>
       <section className="content-section route-section event-intro">
@@ -364,15 +386,15 @@ function HomeScreen({ galleryPreview, activeEvent }: { galleryPreview: PhotoCard
 
       <section className="content-section route-section">
         <div className="route-grid">
-          <Link className="card route-card celebration-card" href="/upload">
+          <Link className="card route-card celebration-card" href={guestUploadHref}>
             <p className="section-label">Share a Memory</p>
             <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
             <p>Fast, mobile-friendly, and designed for guests to use in seconds.</p>
           </Link>
-          <Link className="card route-card celebration-card" href="/photos-of-me">
-            <p className="section-label">Keepsakes</p>
-            <h2>Photos of Vaayu and messages for later.</h2>
-            <p>Future keepsake spaces will live here as the memory book grows.</p>
+          <Link className="card route-card celebration-card" href={guestGalleryHref}>
+            <p className="section-label">Gallery</p>
+            <h2>{"Browse Vaayu's celebration gallery."}</h2>
+            <p>See the approved moments family and guests have already shared.</p>
           </Link>
         </div>
       </section>
@@ -418,8 +440,12 @@ export function BirthdayApp() {
   const [member, setMember] = useState<EventMemberRecord | null>(null);
   const [gallery, setGallery] = useState<PhotoCard[]>(hasSupabaseClientEnv ? [] : demoGallery);
   const [queue, setQueue] = useState<PhotoCard[]>(hasSupabaseClientEnv ? [] : demoQueue);
+  const [guestAccess, setGuestAccess] = useState<GuestAccess>({ eventCode: "", pin: "" });
 
   const isAdmin = member?.role === "owner" || member?.role === "admin";
+  const isGuestFlow = !session?.user;
+  const guestRestrictedScreen =
+    isGuestFlow && ["auth", "host", "join", "admin", "profile", "photos-of-me"].includes(currentScreen);
   const welcomeLabel = useMemo(() => profile?.display_name || session?.user?.email || "Guest", [
     profile?.display_name,
     session?.user?.email,
@@ -471,7 +497,31 @@ export function BirthdayApp() {
       eventCode: nextEventCode ? nextEventCode.toUpperCase() : current.eventCode,
       pin: nextPin ?? current.pin,
     }));
+    setGuestAccess({
+      eventCode: nextEventCode ? nextEventCode.toUpperCase() : "",
+      pin: nextPin ?? "",
+    });
   }, []);
+
+  function buildGuestHref(path: string) {
+    if (!isGuestFlow || !guestAccess.eventCode || !guestAccess.pin || !["/upload", "/gallery"].includes(path)) {
+      return path;
+    }
+
+    const params = new URLSearchParams({
+      event: guestAccess.eventCode,
+      pin: guestAccess.pin,
+    });
+
+    return `${path}?${params.toString()}`;
+  }
+
+  const visibleScreens = isGuestFlow
+    ? screens.filter((screen) => ["upload", "gallery"].includes(screen.key))
+    : screens.filter((screen) => ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key));
+
+  const guestUploadHref = buildGuestHref("/upload");
+  const guestGalleryHref = buildGuestHref("/gallery");
 
   useEffect(() => {
     if (!hasSupabaseClientEnv || !session?.user) {
@@ -522,6 +572,71 @@ export function BirthdayApp() {
       active = false;
     };
   }, [dashboardBusy, event?.id, session?.user]);
+
+  useEffect(() => {
+    if (!hasSupabaseClientEnv || session?.user || currentScreen !== "gallery") {
+      return;
+    }
+
+    if (!guestAccess.eventCode || !guestAccess.pin) {
+      return;
+    }
+
+    let active = true;
+    setDashboardBusy(true);
+
+    void (async () => {
+      try {
+        const response = await fetch(`${functionsBaseUrl}/guest-gallery`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            event_code: guestAccess.eventCode,
+            pin: guestAccess.pin,
+          }),
+        });
+
+        const data = (await response.json()) as GuestGalleryResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load guest gallery.");
+        }
+
+        if (!active) {
+          return;
+        }
+
+        setEvent(data.event);
+        setGallery(
+          data.photos.map((photo) => ({
+            id: photo.id,
+            title: photo.title,
+            subtitle: photo.subtitle,
+            status: photo.status,
+            imageUrl: photo.image_url,
+          })),
+        );
+        setQueue([]);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setGallery([]);
+        setEvent(null);
+        const message = error instanceof Error ? error.message : "Failed to load guest gallery.";
+        setNotice({ message, tone: "error" });
+      } finally {
+        if (active) {
+          setDashboardBusy(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [currentScreen, guestAccess.eventCode, guestAccess.pin, session?.user]);
 
   async function loadProfile(userId: string) {
     const supabase = getSupabaseClient();
@@ -667,6 +782,7 @@ export function BirthdayApp() {
         eventCode: joinForm.eventCode,
         pin: joinForm.pin,
       }));
+      setGuestAccess({ eventCode: joinForm.eventCode.trim().toUpperCase(), pin: joinForm.pin.trim() });
       if (typeof window !== "undefined") {
         window.localStorage.setItem(storedEventIdKey, data.event_id);
       }
@@ -716,6 +832,7 @@ export function BirthdayApp() {
         eventCode: hostForm.publicCode.trim().toUpperCase(),
         pin: hostForm.pin.trim(),
       }));
+      setGuestAccess({ eventCode: hostForm.publicCode.trim().toUpperCase(), pin: hostForm.pin.trim() });
       if (typeof window !== "undefined") {
         window.localStorage.setItem(storedEventIdKey, data.event_id);
       }
@@ -781,6 +898,10 @@ export function BirthdayApp() {
         ...current,
         files: [],
       }));
+      setGuestAccess({
+        eventCode: uploadForm.eventCode.trim().toUpperCase(),
+        pin: uploadForm.pin.trim(),
+      });
       setNotice({
         message:
           lastStatus === "pending"
@@ -793,7 +914,7 @@ export function BirthdayApp() {
         await loadEventDashboard(event.id);
       }
 
-      router.push("/gallery");
+      router.push(buildGuestHref("/gallery"));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed.";
       setNotice({ message, tone: "error" });
@@ -852,12 +973,47 @@ export function BirthdayApp() {
     <AppFrame
       activeEvent={activeEventLabel}
       currentScreen={currentScreen}
+      guestGalleryHref={guestGalleryHref}
+      guestUploadHref={guestUploadHref}
       notice={notice}
       signedInAs={signedInAs}
+      visibleScreens={visibleScreens}
     >
-      {currentScreen === "home" ? <HomeScreen activeEvent={activeEventLabel} galleryPreview={homeGalleryPreview} /> : null}
+      {currentScreen === "home" ? (
+        <HomeScreen
+          activeEvent={activeEventLabel}
+          galleryPreview={homeGalleryPreview}
+          guestGalleryHref={guestGalleryHref}
+          guestUploadHref={guestUploadHref}
+        />
+      ) : null}
 
-      {currentScreen === "auth" ? (
+      {guestRestrictedScreen ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Guest Flow</p>
+                <h2>Guests only need upload and gallery access.</h2>
+              </div>
+            </div>
+            <p className="inline-note">
+              Share memories from Vaayu&apos;s day or browse the approved gallery. Family-only tools stay
+              out of the guest experience.
+            </p>
+            <div className="button-row">
+              <Link className="button button-primary" href={guestUploadHref}>
+                Share a Memory
+              </Link>
+              <Link className="button button-secondary" href={guestGalleryHref}>
+                View Gallery
+              </Link>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "auth" && !guestRestrictedScreen ? (
         <section className="content-section route-section">
           <article className="card">
             <div className="card-header">
@@ -921,7 +1077,7 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
-      {currentScreen === "host" ? (
+      {currentScreen === "host" && !guestRestrictedScreen ? (
         <section className="content-section route-section">
           <article className="card">
             <div className="card-header">
@@ -998,7 +1154,7 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
-      {currentScreen === "join" ? (
+      {currentScreen === "join" && !guestRestrictedScreen ? (
         <section className="content-section route-section">
           <article className="card">
             <div className="card-header">
@@ -1060,12 +1216,14 @@ export function BirthdayApp() {
               <label className="field">
                 <span>Event code</span>
                 <input
-                  onChange={(eventInput) =>
+                  onChange={(eventInput) => {
+                    const nextEventCode = eventInput.target.value.toUpperCase();
                     setUploadForm((current) => ({
                       ...current,
-                      eventCode: eventInput.target.value.toUpperCase(),
-                    }))
-                  }
+                      eventCode: nextEventCode,
+                    }));
+                    setGuestAccess((current) => ({ ...current, eventCode: nextEventCode }));
+                  }}
                   placeholder="AVA5"
                   value={uploadForm.eventCode}
                 />
@@ -1073,9 +1231,11 @@ export function BirthdayApp() {
               <label className="field">
                 <span>PIN</span>
                 <input
-                  onChange={(eventInput) =>
-                    setUploadForm((current) => ({ ...current, pin: eventInput.target.value }))
-                  }
+                  onChange={(eventInput) => {
+                    const nextPin = eventInput.target.value;
+                    setUploadForm((current) => ({ ...current, pin: nextPin }));
+                    setGuestAccess((current) => ({ ...current, pin: nextPin }));
+                  }}
                   placeholder="4 digit PIN"
                   value={uploadForm.pin}
                 />
@@ -1154,7 +1314,9 @@ export function BirthdayApp() {
               <p>
                 {session?.user
                   ? "Join the event to unlock the feed, or share the first memory as a guest."
-                  : "Sign in and join the celebration to unlock Vaayu's shared gallery."}
+                  : guestAccess.eventCode && guestAccess.pin
+                    ? "Guests can browse the approved gallery for this celebration here."
+                    : "Open the guest upload link with the event code and PIN to browse Vaayu's gallery."}
               </p>
             </div>
           ) : (
@@ -1183,7 +1345,7 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
-      {currentScreen === "admin" ? (
+      {currentScreen === "admin" && !guestRestrictedScreen ? (
         <section className="content-section route-section">
           <div className="section-heading">
             <div>
@@ -1247,7 +1409,7 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
-      {currentScreen === "profile" ? (
+      {currentScreen === "profile" && !guestRestrictedScreen ? (
         <section className="content-section route-section">
           <article className="card">
             <div className="card-header">
@@ -1280,7 +1442,7 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
-      {currentScreen === "photos-of-me" ? (
+      {currentScreen === "photos-of-me" && !guestRestrictedScreen ? (
         <section className="content-section placeholder-panel route-section">
           <p className="section-label">Vaayu Keepsakes</p>
           <h2>Photos of Vaayu, milestone moments, and messages are coming soon.</h2>

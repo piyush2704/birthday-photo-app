@@ -77,3 +77,21 @@ export type GuestUploadResponse = {
   token: string;
   status: Extract<PhotoStatus, "pending" | "approved">;
 };
+
+export type GuestGalleryRequest = {
+  event_code: string;
+  pin: string;
+};
+
+export type GuestGalleryPhoto = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: Extract<PhotoStatus, "approved">;
+  image_url: string | null;
+};
+
+export type GuestGalleryResponse = {
+  event: EventRecord;
+  photos: GuestGalleryPhoto[];
+};
