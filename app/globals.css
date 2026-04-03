@@ -109,6 +109,13 @@ img {
     var(--surface);
 }
 
+.hero-parallax {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .hero-copy::before {
   content: "";
   position: absolute;
@@ -127,6 +134,154 @@ img {
   height: 320px;
   border-radius: 999px;
   background: radial-gradient(circle, var(--glow), transparent 70%);
+}
+
+.parallax-orbit {
+  position: absolute;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 140, 87, 0.18);
+  transform: rotate(-12deg);
+}
+
+.parallax-orbit-back {
+  top: -170px;
+  right: -120px;
+  width: 470px;
+  height: 470px;
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.parallax-orbit-mid {
+  right: 56px;
+  bottom: 98px;
+  width: 320px;
+  height: 320px;
+  opacity: 0.42;
+}
+
+.parallax-stars span,
+.scene-star {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff6cf 0%, #ffc768 58%, rgba(255, 199, 104, 0.1) 100%);
+  box-shadow: 0 0 18px rgba(255, 199, 104, 0.8);
+}
+
+.parallax-stars span:nth-child(1) {
+  top: 74px;
+  left: 50%;
+}
+
+.parallax-stars span:nth-child(2) {
+  top: 126px;
+  left: 72%;
+}
+
+.parallax-stars span:nth-child(3) {
+  top: 210px;
+  left: 62%;
+}
+
+.parallax-stars span:nth-child(4) {
+  top: 92px;
+  left: 83%;
+}
+
+.parallax-stars span:nth-child(5) {
+  top: 176px;
+  left: 90%;
+}
+
+.parallax-stars span:nth-child(6) {
+  top: 244px;
+  left: 77%;
+}
+
+.birthday-cake {
+  position: absolute;
+  right: 42px;
+  bottom: 22px;
+  width: 214px;
+  height: 214px;
+}
+
+.cake-top,
+.cake-middle,
+.cake-bottom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 28px;
+  border: 1px solid rgba(228, 152, 114, 0.3);
+  background: linear-gradient(180deg, #fff5f2 0%, #f6c7aa 100%);
+  box-shadow: inset 0 -8px 0 rgba(255, 255, 255, 0.36);
+}
+
+.cake-top {
+  bottom: 108px;
+  width: 92px;
+  height: 34px;
+}
+
+.cake-middle {
+  bottom: 68px;
+  width: 132px;
+  height: 42px;
+}
+
+.cake-bottom {
+  bottom: 20px;
+  width: 170px;
+  height: 52px;
+}
+
+.cake-plate {
+  position: absolute;
+  left: 50%;
+  bottom: 7px;
+  width: 190px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #f0dac4);
+  box-shadow: 0 12px 30px rgba(108, 61, 28, 0.18);
+}
+
+.cake-candle {
+  position: absolute;
+  bottom: 138px;
+  width: 12px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(243, 140, 87, 0.2);
+  background: linear-gradient(180deg, #fffdf7 0%, #ffbf81 100%);
+}
+
+.candle-one {
+  left: 72px;
+}
+
+.candle-two {
+  left: 100px;
+}
+
+.candle-three {
+  left: 128px;
+}
+
+.candle-flame {
+  position: absolute;
+  top: -16px;
+  left: 50%;
+  width: 14px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 70% 70% 70% 70%;
+  background: radial-gradient(circle at 50% 35%, #fff8c9 0%, #ffca57 55%, #f38c57 100%);
+  box-shadow: 0 0 18px rgba(255, 193, 77, 0.85);
 }
 
 .hero-orbit,
@@ -411,6 +566,26 @@ img {
   min-height: 100%;
 }
 
+.intro-story,
+.route-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.memory-ribbon {
+  display: inline-flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.memory-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--orbit-deep), #ffcf6e);
+  box-shadow: 0 0 16px rgba(243, 140, 87, 0.25);
+}
+
 .intro-copy,
 .route-card p,
 .host-summary p,
@@ -502,8 +677,60 @@ img {
 
 .celebration-card {
   background:
-    radial-gradient(circle at top left, rgba(255, 230, 184, 0.7), transparent 30%),
+    radial-gradient(circle at top left, rgba(255, 230, 184, 0.78), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(223, 241, 255, 0.42), transparent 30%),
     rgba(255, 255, 255, 0.74);
+}
+
+.card-scene {
+  position: relative;
+  height: 82px;
+  margin-top: 18px;
+}
+
+.scene-sun {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  width: 62px;
+  height: 62px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #ffe8a1 0%, #ffbf65 68%, rgba(255, 191, 101, 0.1) 100%);
+  box-shadow: 0 0 30px rgba(255, 191, 101, 0.46);
+}
+
+.scene-cloud {
+  position: absolute;
+  left: 0;
+  bottom: 6px;
+  width: 110px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow:
+    24px -10px 0 4px rgba(255, 255, 255, 0.84),
+    56px 0 0 0 rgba(255, 255, 255, 0.76);
+}
+
+.scene-frame {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  width: 116px;
+  height: 72px;
+  border-radius: 22px;
+  border: 10px solid rgba(255, 255, 255, 0.78);
+  background:
+    linear-gradient(180deg, rgba(223, 241, 255, 0.8), rgba(255, 213, 142, 0.6)),
+    #fff;
+  box-shadow: 0 16px 28px rgba(108, 61, 28, 0.12);
+}
+
+.scene-star {
+  top: 10px;
+  right: 18px;
+  width: 12px;
+  height: 12px;
 }
 
 .host-summary {
@@ -722,6 +949,13 @@ img {
   .placeholder-panel {
     padding: 18px;
     border-radius: 24px;
+  }
+
+  .birthday-cake {
+    right: 16px;
+    bottom: 12px;
+    transform: scale(0.82);
+    transform-origin: bottom right;
   }
 
   .hero-copy h1 {

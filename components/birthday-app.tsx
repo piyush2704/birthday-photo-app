@@ -231,6 +231,35 @@ function AppFrame({
     <main className="page-shell app-shell">
       <section className={`hero app-hero ${compactGuestShell ? "hero-public" : ""}`}>
         <div className="hero-copy">
+          {publicLanding ? (
+            <div className="hero-parallax" aria-hidden="true">
+              <div className="parallax-orbit parallax-orbit-back" />
+              <div className="parallax-orbit parallax-orbit-mid" />
+              <div className="parallax-stars">
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="birthday-cake">
+                <div className="cake-candle candle-one">
+                  <span className="candle-flame" />
+                </div>
+                <div className="cake-candle candle-two">
+                  <span className="candle-flame" />
+                </div>
+                <div className="cake-candle candle-three">
+                  <span className="candle-flame" />
+                </div>
+                <div className="cake-top" />
+                <div className="cake-middle" />
+                <div className="cake-bottom" />
+                <div className="cake-plate" />
+              </div>
+            </div>
+          ) : null}
           <div className="hero-orbit">{"Vaayu's 1 Year Around the Sun"}</div>
           <p className="eyebrow">First Birthday Memory Space</p>
           <h1>One beautiful trip around the sun, shared with the people who love Vaayu most.</h1>
@@ -323,6 +352,11 @@ function HomeScreen({
         </div>
         <div className="intro-grid">
           <article className="card intro-story">
+            <div className="memory-ribbon" aria-hidden="true">
+              <span className="memory-dot" />
+              <span className="memory-dot" />
+              <span className="memory-dot" />
+            </div>
             <p className="intro-copy">
               Scan, share, and relive the moments from Vaayu&apos;s first birthday. This guest space is
               built for two things: sending photos quickly and viewing the approved gallery.
@@ -351,11 +385,19 @@ function HomeScreen({
             <p className="section-label">Share Photos</p>
             <h2>Upload straight from your phone.</h2>
             <p>Use the event code and PIN, then send one or many photos in seconds.</p>
+            <div className="card-scene card-scene-upload" aria-hidden="true">
+              <span className="scene-sun" />
+              <span className="scene-cloud" />
+            </div>
           </Link>
           <Link className="card route-card celebration-card" href={guestGalleryHref}>
             <p className="section-label">Gallery</p>
             <h2>View Vaayu&apos;s gallery.</h2>
             <p>Browse the approved photos already shared for the celebration.</p>
+            <div className="card-scene card-scene-gallery" aria-hidden="true">
+              <span className="scene-frame" />
+              <span className="scene-star" />
+            </div>
           </Link>
         </div>
       </section>
