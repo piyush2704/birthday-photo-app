@@ -209,6 +209,7 @@ function AppFrame({
   visibleScreens,
   guestGalleryHref,
   guestUploadHref,
+  publicLanding,
 }: {
   children: ReactNode;
   currentScreen: ScreenKey;
@@ -218,10 +219,11 @@ function AppFrame({
   visibleScreens: ScreenConfig[];
   guestGalleryHref: string;
   guestUploadHref: string;
+  publicLanding: boolean;
 }) {
   return (
     <main className="page-shell app-shell">
-      <section className="hero app-hero">
+      <section className={`hero app-hero ${publicLanding ? "hero-public" : ""}`}>
         <div className="hero-copy">
           <div className="hero-orbit">{"Vaayu's 1 Year Around the Sun"}</div>
           <p className="eyebrow">First Birthday Memory Space</p>
@@ -239,162 +241,115 @@ function AppFrame({
             </Link>
           </div>
         </div>
-        <div className="hero-panel">
-          <div className="sun-badge">Around the Sun</div>
-          <div className="stat-row">
-            <span className="stat-kicker">Current screen</span>
-            <strong>{screens.find((screen) => screen.key === currentScreen)?.label || "Home"}</strong>
+        {!publicLanding ? (
+          <div className="hero-panel">
+            <div className="sun-badge">Around the Sun</div>
+            <div className="stat-row">
+              <span className="stat-kicker">Current screen</span>
+              <strong>{screens.find((screen) => screen.key === currentScreen)?.label || "Home"}</strong>
+            </div>
+            <div className="stat-row">
+              <span className="stat-kicker">Active event</span>
+              <strong>{activeEvent}</strong>
+            </div>
+            <div className="stat-row">
+              <span className="stat-kicker">Signed in as</span>
+              <strong>{signedInAs}</strong>
+            </div>
+            <p className={`notice notice-${notice.tone}`}>{notice.message}</p>
           </div>
-          <div className="stat-row">
-            <span className="stat-kicker">Active event</span>
-            <strong>{activeEvent}</strong>
-          </div>
-          <div className="stat-row">
-            <span className="stat-kicker">Signed in as</span>
-            <strong>{signedInAs}</strong>
-          </div>
-          <p className={`notice notice-${notice.tone}`}>{notice.message}</p>
-        </div>
+        ) : null}
       </section>
 
-      <nav className="route-nav route-nav-top" aria-label="Primary">
-        {visibleScreens.map((screen) => (
-          <Link
-            key={screen.key}
-            className={`route-pill ${screen.key === currentScreen ? "route-pill-active" : ""}`}
-            href={screen.href}
-          >
-            {screen.label}
-          </Link>
-        ))}
-      </nav>
+      {!publicLanding ? (
+        <nav className="route-nav route-nav-top" aria-label="Primary">
+          {visibleScreens.map((screen) => (
+            <Link
+              key={screen.key}
+              className={`route-pill ${screen.key === currentScreen ? "route-pill-active" : ""}`}
+              href={screen.href}
+            >
+              {screen.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       <div className="screen-content">{children}</div>
 
-      <nav
-        className="bottom-nav"
-        aria-label="Bottom navigation"
-        style={{ gridTemplateColumns: `repeat(${visibleScreens.length}, minmax(0, 1fr))` }}
-      >
-        {visibleScreens.map((screen) => (
-          <Link
-            key={screen.key}
-            className={`bottom-nav-link ${screen.key === currentScreen ? "bottom-nav-link-active" : ""}`}
-            href={screen.href}
-          >
-            <span className="bottom-nav-dot" />
-            {screen.label}
-          </Link>
-        ))}
-      </nav>
+      {!publicLanding ? (
+        <nav
+          className="bottom-nav"
+          aria-label="Bottom navigation"
+          style={{ gridTemplateColumns: `repeat(${visibleScreens.length}, minmax(0, 1fr))` }}
+        >
+          {visibleScreens.map((screen) => (
+            <Link
+              key={screen.key}
+              className={`bottom-nav-link ${screen.key === currentScreen ? "bottom-nav-link-active" : ""}`}
+              href={screen.href}
+            >
+              <span className="bottom-nav-dot" />
+              {screen.label}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
     </main>
   );
 }
 
 function HomeScreen({
-  galleryPreview,
-  activeEvent,
   guestUploadHref,
   guestGalleryHref,
 }: {
-  galleryPreview: PhotoCard[];
-  activeEvent: string;
   guestUploadHref: string;
   guestGalleryHref: string;
 }) {
   return (
     <>
-      <section className="content-section route-section event-intro">
+      <section className="content-section route-section event-intro guest-home">
         <div className="section-heading">
           <div>
             <p className="section-label">Welcome</p>
-            <h2>{"Welcome to Vaayu's first trip around the sun."}</h2>
+            <h2>{"Welcome to Vaayu's celebration."}</h2>
           </div>
         </div>
         <div className="intro-grid">
           <article className="card intro-story">
             <p className="intro-copy">
-              A whole year of love, laughter, sleepy cuddles, and tiny milestones led to this day.
-              {"Thank you for being part of Vaayu's celebration and helping the family keep every warm"}
-              {" little memory close."}
+              Scan, share, and relive the moments from Vaayu&apos;s first birthday. This guest space is
+              built for two things: sending photos quickly and viewing the approved gallery.
             </p>
             <div className="event-badges">
-              <span className="pill">Mobile-first sharing</span>
-              <span className="pill">{activeEvent}</span>
+              <span className="pill">Guest access</span>
+              <span className="pill">Upload + gallery only</span>
               <span className="pill">Family & friends only</span>
             </div>
           </article>
           <article className="card orbit-callout">
-            <p className="section-label">What to do</p>
-            <h2>Share a memory, browse the gallery, and celebrate the little moments.</h2>
+            <p className="section-label">Choose One</p>
+            <h2>Share photos from your phone or browse Vaayu&apos;s gallery.</h2>
             <div className="orbit-mini-list">
-              {messageIdeas.map((idea) => (
-                <p key={idea}>{idea}</p>
-              ))}
+              <p>Upload one or many photos in a few taps.</p>
+              <p>View the approved moments from Vaayu&apos;s big day.</p>
+              <p>Everything else stays private to the family.</p>
             </div>
           </article>
-        </div>
-      </section>
-
-      <section className="content-section route-section">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Around the Sun</p>
-            <h2>{"Highlight the milestones that shaped Vaayu's first year."}</h2>
-          </div>
-        </div>
-        <div className="highlight-strip">
-          {highlightMoments.map((item) => (
-            <article className="highlight-card" key={item.title}>
-              <div className="highlight-orbit">{item.orbit}</div>
-              <h3>{item.title}</h3>
-              <p>{item.note}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section route-section">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Memory Feed Preview</p>
-            <h2>Image-first, warm, and easy to browse on mobile.</h2>
-          </div>
-        </div>
-        <div className="photo-grid">
-          {galleryPreview.map((item) => (
-            <article className="photo-card" key={item.id}>
-              <div className="photo-frame">
-                {item.imageUrl ? (
-                  <Image alt={item.title} fill sizes="(max-width: 960px) 100vw, 33vw" src={item.imageUrl} unoptimized />
-                ) : (
-                  <div className="photo-fallback" />
-                )}
-                <div className="photo-glow" />
-              </div>
-              <div className="photo-copy">
-                <div className="photo-copy-top">
-                  <h3>{item.title}</h3>
-                  <span className={`status status-${item.status}`}>{item.status}</span>
-                </div>
-                <p>{item.subtitle}</p>
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 
       <section className="content-section route-section">
         <div className="route-grid">
           <Link className="card route-card celebration-card" href={guestUploadHref}>
-            <p className="section-label">Share a Memory</p>
-            <h2>{"Upload your favorite moment from Vaayu's big day."}</h2>
-            <p>Fast, mobile-friendly, and designed for guests to use in seconds.</p>
+            <p className="section-label">Share Photos</p>
+            <h2>Upload straight from your phone.</h2>
+            <p>Use the event code and PIN, then send one or many photos in seconds.</p>
           </Link>
           <Link className="card route-card celebration-card" href={guestGalleryHref}>
             <p className="section-label">Gallery</p>
-            <h2>{"Browse Vaayu's celebration gallery."}</h2>
-            <p>See the approved moments family and guests have already shared.</p>
+            <h2>View Vaayu&apos;s gallery.</h2>
+            <p>Browse the approved photos already shared for the celebration.</p>
           </Link>
         </div>
       </section>
@@ -967,7 +922,7 @@ export function BirthdayApp() {
 
   const activeEventLabel = event?.title || "Join an event to unlock the dashboard";
   const signedInAs = session?.user?.email || "Anonymous guest";
-  const homeGalleryPreview = gallery.length > 0 ? gallery.slice(0, 3) : demoGallery;
+  const publicLanding = isGuestFlow && currentScreen === "home";
 
   return (
     <AppFrame
@@ -976,13 +931,12 @@ export function BirthdayApp() {
       guestGalleryHref={guestGalleryHref}
       guestUploadHref={guestUploadHref}
       notice={notice}
+      publicLanding={publicLanding}
       signedInAs={signedInAs}
       visibleScreens={visibleScreens}
     >
       {currentScreen === "home" ? (
         <HomeScreen
-          activeEvent={activeEventLabel}
-          galleryPreview={homeGalleryPreview}
           guestGalleryHref={guestGalleryHref}
           guestUploadHref={guestUploadHref}
         />

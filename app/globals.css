@@ -82,6 +82,10 @@ img {
   align-items: stretch;
 }
 
+.hero-public {
+  grid-template-columns: 1fr;
+}
+
 .hero-copy,
 .hero-panel,
 .card,
@@ -390,6 +394,10 @@ img {
   background:
     radial-gradient(circle at top left, rgba(223, 241, 255, 0.6), transparent 30%),
     var(--surface);
+}
+
+.guest-home {
+  margin-top: 0;
 }
 
 .intro-grid {
