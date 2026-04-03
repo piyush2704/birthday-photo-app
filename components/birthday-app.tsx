@@ -80,6 +80,12 @@ type GuestAccess = {
   pin: string;
 };
 
+type FilePreview = {
+  id: string;
+  url: string;
+  name: string;
+};
+
 type BirthdayAppProps = {
   initialGuestAccess?: GuestAccess;
 };
@@ -240,6 +246,29 @@ function AppFrame({
 
   return (
     <main className="page-shell app-shell">
+      {compactGuestShell && !publicLanding ? (
+        <header className="guest-header">
+          <Link className="guest-brand" href={visibleScreens[0]?.href || "/gallery"}>
+            <span className="guest-brand-mark">✦</span>
+            <span>
+              <strong>Vaayu</strong>
+              <small>1 Year Around the Sun</small>
+            </span>
+          </Link>
+          <nav className="guest-header-nav" aria-label="Guest navigation">
+            {visibleScreens.map((screen) => (
+              <Link
+                key={screen.key}
+                className={`guest-header-link ${screen.key === currentScreen ? "guest-header-link-active" : ""}`}
+                href={screen.href}
+              >
+                {screen.label}
+              </Link>
+            ))}
+          </nav>
+        </header>
+      ) : null}
+
       <section
         className={`hero app-hero ${compactGuestShell ? "hero-public" : ""} ${publicLanding ? "hero-opening" : ""}`}
       >
@@ -410,6 +439,8 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [guestAccess, setGuestAccess] = useState<GuestAccess>(
     initialGuestAccess || { eventCode: "", pin: "" },
   );
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+  const [filePreviews, setFilePreviews] = useState<FilePreview[]>([]);
 
   const isAdmin = member?.role === "owner" || member?.role === "admin";
   const isGuestFlow = !session?.user;
@@ -494,12 +525,26 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const guestGalleryHref = buildGuestHref("/gallery");
   const visibleScreens = (
     isGuestFlow
-      ? screens.filter((screen) => ["gallery", "upload", "event"].includes(screen.key))
+      ? screens.filter((screen) => ["gallery", "upload"].includes(screen.key))
       : screens.filter((screen) => ["home", "upload", "gallery", "photos-of-me", "profile"].includes(screen.key))
   ).map((screen) => ({
     ...screen,
     href: buildGuestHref(screen.href),
   }));
+
+  useEffect(() => {
+    const nextPreviews = uploadForm.files.map((file, index) => ({
+      id: `${file.name}-${file.lastModified}-${index}`,
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }));
+
+    setFilePreviews(nextPreviews);
+
+    return () => {
+      nextPreviews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [uploadForm.files]);
 
   useEffect(() => {
     if (!isGuestFlow || currentScreen !== "home") {
@@ -962,6 +1007,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const publicLanding = isGuestFlow && currentScreen === "home";
   const compactGuestShell = isGuestFlow && ["home", "upload", "gallery", "event"].includes(currentScreen);
   const openingPhotos = gallery.map((item) => item.imageUrl).filter((item): item is string => Boolean(item));
+  const selectedPhoto = gallery.find((item) => item.id === selectedPhotoId) || null;
 
   return (
     <AppFrame
@@ -1190,12 +1236,13 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       ) : null}
 
       {currentScreen === "upload" ? (
-        <section className="content-section route-section">
-          <article className="card">
-            <div className="card-header">
+        <section className="content-section route-section upload-experience">
+          <article className="card upload-card">
+            <div className="upload-intro">
               <div>
                 <p className="section-label">Upload</p>
-                <h2>Add your photos for Vaayu.</h2>
+                <h2>Share your favorite moments.</h2>
+                <p className="inline-note">Help us celebrate Vaayu&apos;s journey around the sun.</p>
               </div>
               {!isGuestFlow ? (
                 <span className="pill">
@@ -1204,63 +1251,92 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               ) : null}
             </div>
 
-            <form className="stack" onSubmit={handleUpload}>
-              <label className="field">
-                <span>Event code</span>
-                <input
-                  onChange={(eventInput) => {
-                    const nextEventCode = eventInput.target.value.toUpperCase();
-                    setUploadForm((current) => ({
-                      ...current,
-                      eventCode: nextEventCode,
-                    }));
-                    setGuestAccess((current) => ({ ...current, eventCode: nextEventCode }));
-                  }}
-                  placeholder="AVA5"
-                  value={uploadForm.eventCode}
-                />
-              </label>
-              <label className="field">
-                <span>PIN</span>
-                <input
-                  onChange={(eventInput) => {
-                    const nextPin = eventInput.target.value;
-                    setUploadForm((current) => ({ ...current, pin: nextPin }));
-                    setGuestAccess((current) => ({ ...current, pin: nextPin }));
-                  }}
-                  placeholder="4 digit PIN"
-                  value={uploadForm.pin}
-                />
-              </label>
-              <label className="field">
-                <span>Your name</span>
-                <input
-                  onChange={(eventInput) =>
-                    setUploadForm((current) => ({ ...current, uploaderName: eventInput.target.value }))
-                  }
-                  placeholder="Optional"
-                  value={uploadForm.uploaderName}
-                />
-              </label>
-              <label className="field">
-                <span>Photos</span>
+            <form className="stack upload-form" onSubmit={handleUpload}>
+              <div className="upload-fields">
+                <label className="field">
+                  <span>Event code</span>
+                  <input
+                    onChange={(eventInput) => {
+                      const nextEventCode = eventInput.target.value.toUpperCase();
+                      setUploadForm((current) => ({
+                        ...current,
+                        eventCode: nextEventCode,
+                      }));
+                      setGuestAccess((current) => ({ ...current, eventCode: nextEventCode }));
+                    }}
+                    placeholder="VAAYU"
+                    value={uploadForm.eventCode}
+                  />
+                </label>
+                <label className="field">
+                  <span>PIN</span>
+                  <input
+                    onChange={(eventInput) => {
+                      const nextPin = eventInput.target.value;
+                      setUploadForm((current) => ({ ...current, pin: nextPin }));
+                      setGuestAccess((current) => ({ ...current, pin: nextPin }));
+                    }}
+                    placeholder="2905"
+                    value={uploadForm.pin}
+                  />
+                </label>
+                <label className="field upload-field-wide">
+                  <span>Your name</span>
+                  <input
+                    onChange={(eventInput) =>
+                      setUploadForm((current) => ({ ...current, uploaderName: eventInput.target.value }))
+                    }
+                    placeholder="Optional"
+                    value={uploadForm.uploaderName}
+                  />
+                </label>
+              </div>
+
+              <label className={`upload-zone ${filePreviews.length > 0 ? "upload-zone-filled" : ""}`}>
                 <input
                   accept=".jpg,.jpeg,.png,.heic,.webp,image/*"
                   multiple
                   onChange={handleFileChange}
                   type="file"
                 />
+                <span className="upload-zone-icon">{filePreviews.length > 0 ? "🖼" : "↑"}</span>
+                <strong>
+                  {filePreviews.length > 0 ? "Add more sunshine memories" : "Share your favorite moments"}
+                </strong>
+                <span>
+                  {filePreviews.length > 0
+                    ? `${filePreviews.length} photo${filePreviews.length === 1 ? "" : "s"} ready to upload`
+                    : "Drag, drop, or tap to choose photos from your phone"}
+                </span>
+                <small>JPG, PNG, HEIC, WEBP, multiple files</small>
               </label>
-              {uploadForm.files.length > 0 ? (
-                <p className="inline-note">
-                  {uploadForm.files.length} photo{uploadForm.files.length === 1 ? "" : "s"} selected.
-                </p>
+
+              {filePreviews.length > 0 ? (
+                <div className="upload-preview-grid">
+                  {filePreviews.map((preview) => (
+                    <article className="upload-preview-card" key={preview.id}>
+                      <Image
+                        alt={preview.name}
+                        height={320}
+                        src={preview.url}
+                        unoptimized
+                        width={320}
+                      />
+                      <span>{preview.name}</span>
+                    </article>
+                  ))}
+                </div>
               ) : null}
+
               <button
-                className="button button-primary"
+                className="button button-primary upload-cta"
                 disabled={uploadBusy || !hasSupabaseClientEnv || uploadForm.files.length === 0}
               >
-                {uploadBusy ? "Uploading..." : "Send Memories"}
+                {uploadBusy
+                  ? "Uploading precious moments..."
+                  : `Upload ${uploadForm.files.length || ""} ${
+                      uploadForm.files.length === 1 ? "photo" : "photos"
+                    } to Vaayu's album`.trim()}
               </button>
             </form>
             <p className="inline-note">
@@ -1273,12 +1349,12 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       ) : null}
 
       {currentScreen === "gallery" ? (
-        <section className="content-section route-section">
-          <div className="section-heading">
+        <section className="content-section route-section gallery-experience">
+          <div className="gallery-hero">
             <div>
               <p className="section-label">Gallery</p>
-              <h2>Vaayu&apos;s birthday gallery.</h2>
-              <p className="inline-note">The moments that made his first celebration so special.</p>
+              <h2>Vaayu&apos;s Birthday Gallery</h2>
+              <p className="gallery-subtitle">A year of wonder, smiles, and sunshine.</p>
             </div>
             {event?.id && session?.user ? (
               <button
@@ -1291,7 +1367,6 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               </button>
             ) : null}
           </div>
-
           <div className="highlight-strip feed-highlights">
             {highlightMoments.map((item) => (
               <article className="highlight-card compact" key={item.title}>
@@ -1314,12 +1389,22 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               </p>
             </div>
           ) : (
-            <div className="photo-grid">
+            <div className="gallery-masonry">
               {gallery.map((item) => (
-                <article className="photo-card" key={item.id}>
+                <article
+                  className="photo-card gallery-masonry-item"
+                  key={item.id}
+                  onClick={() => setSelectedPhotoId(item.id)}
+                >
                   <div className="photo-frame">
                     {item.imageUrl ? (
-                      <Image alt={item.title} fill sizes="(max-width: 960px) 100vw, 33vw" src={item.imageUrl} unoptimized />
+                      <Image
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 960px) 100vw, 33vw"
+                        src={item.imageUrl}
+                        unoptimized
+                      />
                     ) : (
                       <div className="photo-fallback" />
                     )}
@@ -1328,7 +1413,6 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
                   <div className="photo-copy">
                     <div className="photo-copy-top">
                       <h3>{item.title}</h3>
-                      <span className={`status status-${item.status}`}>{item.status}</span>
                     </div>
                     <p>{item.subtitle}</p>
                   </div>
@@ -1336,6 +1420,35 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               ))}
             </div>
           )}
+
+          {isGuestFlow ? (
+            <Link className="floating-upload-cta" href={guestUploadHref}>
+              <span className="floating-upload-plus">+</span>
+              <span>Upload</span>
+            </Link>
+          ) : null}
+
+          {selectedPhoto ? (
+            <button className="gallery-lightbox" onClick={() => setSelectedPhotoId(null)} type="button">
+              <div className="gallery-lightbox-frame" onClick={(eventClick) => eventClick.stopPropagation()}>
+                {selectedPhoto.imageUrl ? (
+                  <Image
+                    alt={selectedPhoto.title}
+                    height={1080}
+                    src={selectedPhoto.imageUrl}
+                    unoptimized
+                    width={1080}
+                  />
+                ) : (
+                  <div className="photo-fallback" />
+                )}
+                <div className="gallery-lightbox-copy">
+                  <h3>{selectedPhoto.title}</h3>
+                  <p>{selectedPhoto.subtitle}</p>
+                </div>
+              </div>
+            </button>
+          ) : null}
         </section>
       ) : null}
 
