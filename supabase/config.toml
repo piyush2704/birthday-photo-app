@@ -412,6 +412,18 @@ verify_jwt = false
 import_map = "./functions/guest-gallery/deno.json"
 entrypoint = "./functions/guest-gallery/index.ts"
 
+[functions.moderator-gallery]
+enabled = true
+verify_jwt = false
+import_map = "./functions/moderator-gallery/deno.json"
+entrypoint = "./functions/moderator-gallery/index.ts"
+
+[functions.moderator-delete]
+enabled = true
+verify_jwt = false
+import_map = "./functions/moderator-delete/deno.json"
+entrypoint = "./functions/moderator-delete/index.ts"
+
 [functions.join-event]
 enabled = true
 verify_jwt = true

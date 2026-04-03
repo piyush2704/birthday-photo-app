@@ -18,6 +18,8 @@ import type {
   GuestGalleryResponse,
   GuestUploadResponse,
   JoinEventResponse,
+  ModeratorDeleteResponse,
+  ModeratorGalleryResponse,
   PhotoCard,
   PhotoRecord,
   ProfileRecord,
@@ -50,6 +52,11 @@ type HostForm = {
   moderationRequired: boolean;
 };
 
+type ModeratorForm = {
+  eventCode: string;
+  moderatorPin: string;
+};
+
 type ScreenKey =
   | "home"
   | "auth"
@@ -58,6 +65,7 @@ type ScreenKey =
   | "upload"
   | "gallery"
   | "event"
+  | "moderator"
   | "admin"
   | "profile"
   | "photos-of-me";
@@ -115,6 +123,7 @@ const screens: ScreenConfig[] = [
   { key: "gallery", href: "/gallery", label: "Gallery" },
   { key: "upload", href: "/upload", label: "Upload" },
   { key: "event", href: "/event", label: "Event" },
+  { key: "moderator", href: "/moderator", label: "Manager" },
   { key: "admin", href: "/admin", label: "Moderation" },
   { key: "profile", href: "/profile", label: "Profile" },
   { key: "photos-of-me", href: "/photos-of-me", label: "Vaayu" },
@@ -424,6 +433,10 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     pin: "",
     moderationRequired: true,
   });
+  const [moderatorForm, setModeratorForm] = useState<ModeratorForm>({
+    eventCode: initialGuestAccess?.eventCode || "",
+    moderatorPin: "",
+  });
   const [notice, setNotice] = useState<Notice>({
     message: hasSupabaseClientEnv
       ? "Live client env detected. Auth, join-event, upload, and gallery reads are wired."
@@ -434,6 +447,8 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [joinBusy, setJoinBusy] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [hostBusy, setHostBusy] = useState(false);
+  const [moderatorBusy, setModeratorBusy] = useState(false);
+  const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [dashboardBusy, setDashboardBusy] = useState(false);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(hasSupabaseClientEnv ? null : demoProfile);
@@ -502,6 +517,10 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       ...current,
       eventCode: nextEventCode ? nextEventCode.toUpperCase() : current.eventCode,
       pin: nextPin ?? current.pin,
+    }));
+    setModeratorForm((current) => ({
+      ...current,
+      eventCode: nextEventCode ? nextEventCode.toUpperCase() : current.eventCode,
     }));
     setGuestAccess({
       eventCode: nextEventCode ? nextEventCode.toUpperCase() : "",
@@ -1008,6 +1027,87 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     }
   }
 
+  async function handleModeratorLookup(eventForm: FormEvent<HTMLFormElement>) {
+    eventForm.preventDefault();
+
+    if (!hasSupabaseClientEnv) {
+      return;
+    }
+
+    setModeratorBusy(true);
+
+    try {
+      const response = await fetch(`${functionsBaseUrl}/moderator-gallery`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_code: moderatorForm.eventCode.trim().toUpperCase(),
+          moderator_pin: moderatorForm.moderatorPin.trim(),
+        }),
+      });
+
+      const data = (await response.json()) as ModeratorGalleryResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to open moderator manager.");
+      }
+
+      setEvent(data.event);
+      setGallery(
+        data.photos.map((photo) => ({
+          id: photo.id,
+          title: photo.title,
+          subtitle: photo.subtitle,
+          status: photo.status,
+          imageUrl: photo.image_url,
+        })),
+      );
+      setNotice({ message: "Moderator access granted. You can now review and delete uploads.", tone: "success" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to open moderator manager.";
+      setNotice({ message, tone: "error" });
+      setGallery([]);
+    } finally {
+      setModeratorBusy(false);
+    }
+  }
+
+  async function handleModeratorDelete(photoId: string) {
+    if (!hasSupabaseClientEnv) {
+      return;
+    }
+
+    setDeleteBusyId(photoId);
+
+    try {
+      const response = await fetch(`${functionsBaseUrl}/moderator-delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          event_code: moderatorForm.eventCode.trim().toUpperCase(),
+          moderator_pin: moderatorForm.moderatorPin.trim(),
+          photo_id: photoId,
+        }),
+      });
+
+      const data = (await response.json()) as ModeratorDeleteResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete photo.");
+      }
+
+      setGallery((current) => current.filter((item) => item.id !== data.photo_id));
+      setNotice({ message: "Photo deleted from the gallery.", tone: "success" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete photo.";
+      setNotice({ message, tone: "error" });
+    } finally {
+      setDeleteBusyId(null);
+    }
+  }
+
   const activeEventLabel = event?.title || "Vaayu's 1st Birthday";
   const signedInAs = session?.user?.email || "Anonymous guest";
   const publicLanding = isGuestFlow && currentScreen === "home";
@@ -1394,11 +1494,31 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
 
       {currentScreen === "gallery" ? (
         <section className="content-section route-section gallery-experience">
+          <div className="gallery-decor" aria-hidden="true">
+            <div className="gallery-orbit gallery-orbit-one" />
+            <div className="gallery-orbit gallery-orbit-two" />
+            <div className="gallery-glow gallery-glow-one" />
+            <div className="gallery-glow gallery-glow-two" />
+            <div className="gallery-sparkles">
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="gallery-cake-sticker">
+              <span className="gallery-candle gallery-candle-one" />
+              <span className="gallery-candle gallery-candle-two" />
+              <span className="gallery-candle gallery-candle-three" />
+              <span className="gallery-cake-top" />
+              <span className="gallery-cake-bottom" />
+              <span className="gallery-cake-plate" />
+            </div>
+          </div>
           <div className="gallery-hero">
             <div>
-              <p className="section-label">Gallery</p>
-              <h2>A Year of Wonder</h2>
-              <p className="gallery-subtitle">365 days of smiles, giggles, and sunshine ☀️</p>
+              <p className="section-label">Birthday Memories</p>
+              <h2>Vaayu&apos;s First Trip Around the Sun</h2>
+              <p className="gallery-subtitle">Birthday Memories</p>
             </div>
             {event?.id && session?.user ? (
               <button
@@ -1588,6 +1708,93 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               </Link>
             </div>
           </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "moderator" ? (
+        <section className="content-section route-section">
+          <article className="card moderator-card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Moderator Manager</p>
+                <h2>Manage uploaded images with a separate PIN.</h2>
+              </div>
+              <span className="pill">Hidden access</span>
+            </div>
+
+            <form className="stack" onSubmit={handleModeratorLookup}>
+              <label className="field">
+                <span>Event code</span>
+                <input
+                  onChange={(eventInput) =>
+                    setModeratorForm((current) => ({
+                      ...current,
+                      eventCode: eventInput.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="VAAYU"
+                  value={moderatorForm.eventCode}
+                />
+              </label>
+              <label className="field">
+                <span>Moderator PIN</span>
+                <input
+                  onChange={(eventInput) =>
+                    setModeratorForm((current) => ({
+                      ...current,
+                      moderatorPin: eventInput.target.value,
+                    }))
+                  }
+                  placeholder="Separate secret PIN"
+                  type="password"
+                  value={moderatorForm.moderatorPin}
+                />
+              </label>
+              <button className="button button-primary" disabled={moderatorBusy || !hasSupabaseClientEnv}>
+                {moderatorBusy ? "Opening..." : "Open image manager"}
+              </button>
+            </form>
+
+            <p className="inline-note">
+              This page is protected by a different moderator PIN from the guest upload/gallery PIN. Use it
+              only for image cleanup.
+            </p>
+          </article>
+
+          {gallery.length > 0 ? (
+            <div className="moderator-grid">
+              {gallery.map((item) => (
+                <article className="moderator-photo-card" key={item.id}>
+                  <div className="moderator-photo-frame">
+                    {item.imageUrl ? (
+                      <Image
+                        alt={item.title}
+                        fill
+                        sizes="(max-width: 960px) 100vw, 33vw"
+                        src={item.imageUrl}
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="photo-fallback" />
+                    )}
+                  </div>
+                  <div className="moderator-photo-copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.subtitle}</p>
+                    <span className={`status status-${item.status}`}>{item.status}</span>
+                    <button
+                      className="button button-secondary moderator-delete-button"
+                      disabled={deleteBusyId === item.id}
+                      onClick={() => void handleModeratorDelete(item.id)}
+                      type="button"
+                    >
+                      {deleteBusyId === item.id ? "Deleting..." : "Delete photo"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
 

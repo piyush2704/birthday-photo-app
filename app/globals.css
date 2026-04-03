@@ -827,7 +827,167 @@ img {
   padding: 0;
 }
 
+.gallery-decor {
+  position: absolute;
+  inset: -12px 0 auto;
+  height: 220px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gallery-orbit {
+  position: absolute;
+  border: 1px dashed rgba(255, 155, 113, 0.16);
+  border-radius: 999px;
+}
+
+.gallery-orbit-one {
+  top: 8px;
+  left: -16px;
+  width: 240px;
+  height: 240px;
+}
+
+.gallery-orbit-two {
+  top: -18px;
+  right: -20px;
+  width: 180px;
+  height: 180px;
+}
+
+.gallery-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(12px);
+}
+
+.gallery-glow-one {
+  top: 18px;
+  right: 22%;
+  width: 108px;
+  height: 108px;
+  background: radial-gradient(circle, rgba(255, 212, 163, 0.42), transparent 72%);
+}
+
+.gallery-glow-two {
+  top: 92px;
+  left: 14%;
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(255, 184, 148, 0.26), transparent 70%);
+}
+
+.gallery-sparkles span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #fff4c8 0%, #ffb894 60%, transparent 100%);
+  box-shadow: 0 0 12px rgba(255, 184, 148, 0.35);
+}
+
+.gallery-sparkles span:nth-child(1) {
+  left: 18%;
+  top: 34px;
+}
+
+.gallery-sparkles span:nth-child(2) {
+  right: 18%;
+  top: 42px;
+}
+
+.gallery-sparkles span:nth-child(3) {
+  left: 36%;
+  top: 104px;
+}
+
+.gallery-sparkles span:nth-child(4) {
+  right: 32%;
+  top: 118px;
+}
+
+.gallery-cake-sticker {
+  position: absolute;
+  right: 14px;
+  top: 54px;
+  width: 92px;
+  height: 92px;
+  opacity: 0.72;
+}
+
+.gallery-cake-top,
+.gallery-cake-bottom,
+.gallery-cake-plate,
+.gallery-candle {
+  position: absolute;
+}
+
+.gallery-cake-top,
+.gallery-cake-bottom {
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff7f3, #f8d0ba);
+  border: 1px solid rgba(236, 119, 91, 0.16);
+}
+
+.gallery-cake-top {
+  bottom: 34px;
+  width: 44px;
+  height: 16px;
+}
+
+.gallery-cake-bottom {
+  bottom: 14px;
+  width: 66px;
+  height: 20px;
+}
+
+.gallery-cake-plate {
+  left: 50%;
+  bottom: 8px;
+  width: 74px;
+  height: 8px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #eed8c4);
+}
+
+.gallery-candle {
+  bottom: 50px;
+  width: 6px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff, #ffb894);
+}
+
+.gallery-candle::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 8px;
+  height: 10px;
+  transform: translateX(-50%);
+  border-radius: 70% 70% 70% 70%;
+  background: radial-gradient(circle at 50% 30%, #fff7ca 0%, #ffc667 60%, #ff9b71 100%);
+}
+
+.gallery-candle-one {
+  left: 26px;
+}
+
+.gallery-candle-two {
+  left: 43px;
+}
+
+.gallery-candle-three {
+  left: 60px;
+}
+
 .gallery-hero {
+  position: relative;
+  z-index: 1;
   display: grid;
   justify-items: center;
   text-align: center;
@@ -1508,6 +1668,50 @@ img {
   box-shadow: 0 18px 34px rgba(255, 122, 69, 0.2);
 }
 
+.moderator-card {
+  max-width: 560px;
+}
+
+.moderator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.moderator-photo-card {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(92, 74, 58, 0.1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 244, 239, 0.9));
+  box-shadow: 0 18px 34px rgba(91, 66, 63, 0.08);
+}
+
+.moderator-photo-frame {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+}
+
+.moderator-photo-copy {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.moderator-photo-copy h3,
+.moderator-photo-copy p {
+  margin: 0;
+}
+
+.moderator-photo-copy p {
+  color: var(--muted);
+}
+
+.moderator-delete-button {
+  margin-top: 4px;
+}
+
 .bottom-nav-link {
   display: grid;
   gap: 6px;
@@ -1545,6 +1749,10 @@ img {
 
   .gallery-collage {
     grid-auto-rows: 104px;
+  }
+
+  .moderator-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1668,6 +1876,12 @@ img {
     grid-auto-rows: 96px;
   }
 
+  .gallery-cake-sticker {
+    right: 2px;
+    top: 72px;
+    transform: scale(0.88);
+  }
+
   .floating-upload-cta {
     right: 14px;
     bottom: 18px;
@@ -1678,6 +1892,10 @@ img {
   .gallery-lightbox-nav {
     width: 40px;
     height: 40px;
+  }
+
+  .moderator-grid {
+    grid-template-columns: 1fr;
   }
 
   .queue-preview {

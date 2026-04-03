@@ -95,3 +95,32 @@ export type GuestGalleryResponse = {
   event: EventRecord;
   photos: GuestGalleryPhoto[];
 };
+
+export type ModeratorGalleryRequest = {
+  event_code: string;
+  moderator_pin: string;
+};
+
+export type ModeratorGalleryPhoto = {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: PhotoStatus;
+  image_url: string | null;
+};
+
+export type ModeratorGalleryResponse = {
+  event: EventRecord;
+  photos: ModeratorGalleryPhoto[];
+};
+
+export type ModeratorDeleteRequest = {
+  event_code: string;
+  moderator_pin: string;
+  photo_id: string;
+};
+
+export type ModeratorDeleteResponse = {
+  photo_id: string;
+  deleted: true;
+};
