@@ -1,7 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { demoEvent, demoGallery, demoProfile, demoQueue } from "../lib/mockData";
 import { functionsBaseUrl, getSupabaseClient, hasSupabaseClientEnv } from "../lib/supabaseClient";
@@ -16,6 +18,7 @@ import type {
 } from "../lib/types";
 
 type NoticeTone = "neutral" | "success" | "error";
+type ModerationAction = "approve" | "reject";
 
 type Notice = {
   message: string;
@@ -34,7 +37,33 @@ type UploadForm = {
   file: File | null;
 };
 
-type ModerationAction = "approve" | "reject";
+type ScreenKey = "home" | "auth" | "join" | "upload" | "gallery" | "admin" | "profile" | "photos-of-me";
+
+type ScreenConfig = {
+  key: ScreenKey;
+  href: string;
+  label: string;
+};
+
+type DashboardData = {
+  event: EventRecord | null;
+  member: EventMemberRecord | null;
+  gallery: PhotoCard[];
+  queue: PhotoCard[];
+};
+
+const screens: ScreenConfig[] = [
+  { key: "home", href: "/", label: "Home" },
+  { key: "auth", href: "/auth", label: "Sign in" },
+  { key: "join", href: "/join", label: "Join event" },
+  { key: "upload", href: "/upload", label: "Upload" },
+  { key: "gallery", href: "/gallery", label: "Gallery" },
+  { key: "admin", href: "/admin", label: "Moderation" },
+  { key: "profile", href: "/profile", label: "Profile" },
+  { key: "photos-of-me", href: "/photos-of-me", label: "Photos of me" },
+];
+
+const screenByPathname = new Map<string, ScreenKey>(screens.map((screen) => [screen.href, screen.key]));
 
 function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -71,7 +100,171 @@ async function createSignedViewUrls(paths: string[]) {
   return new Map(data.map((entry) => [entry.path, entry.signedUrl]));
 }
 
+async function fetchDashboardData(eventId: string, userId: string): Promise<DashboardData> {
+  const supabase = getSupabaseClient();
+
+  const [{ data: eventData, error: eventError }, { data: memberData, error: memberError }] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("id, title, public_code, moderation_required, created_at")
+        .eq("id", eventId)
+        .maybeSingle(),
+      supabase
+        .from("event_members")
+        .select("id, event_id, user_id, role, joined_at")
+        .eq("event_id", eventId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
+
+  if (eventError) {
+    throw new Error(eventError.message);
+  }
+
+  if (memberError) {
+    throw new Error(memberError.message);
+  }
+
+  const photoQuery = supabase
+    .from("photos")
+    .select("id, event_id, uploader_user_id, uploader_display_name, storage_path, caption, status, created_at")
+    .eq("event_id", eventId)
+    .eq("status", "approved")
+    .order("created_at", { ascending: false });
+
+  const pendingQuery = supabase
+    .from("photos")
+    .select("id, event_id, uploader_user_id, uploader_display_name, storage_path, caption, status, created_at")
+    .eq("event_id", eventId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  const hasAdminAccess = memberData?.role === "owner" || memberData?.role === "admin";
+  const [photoResult, pendingResult] = await Promise.all([
+    photoQuery,
+    hasAdminAccess ? pendingQuery : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (photoResult.error) {
+    throw new Error(photoResult.error.message);
+  }
+
+  if (pendingResult.error) {
+    throw new Error(pendingResult.error.message);
+  }
+
+  const approvedPhotos = photoResult.data || [];
+  const pendingPhotos = pendingResult.data || [];
+  const imageUrls = await createSignedViewUrls(
+    [...approvedPhotos, ...pendingPhotos].map((item) => item.storage_path),
+  );
+
+  return {
+    event: eventData,
+    member: memberData,
+    gallery: approvedPhotos.map((item) => buildPhotoCard(item, imageUrls.get(item.storage_path) ?? null)),
+    queue: pendingPhotos.map((item) => buildPhotoCard(item, imageUrls.get(item.storage_path) ?? null)),
+  };
+}
+
+function AppFrame({
+  children,
+  currentScreen,
+  notice,
+  activeEvent,
+  signedInAs,
+}: {
+  children: ReactNode;
+  currentScreen: ScreenKey;
+  notice: Notice;
+  activeEvent: string;
+  signedInAs: string;
+}) {
+  return (
+    <main className="page-shell app-shell">
+      <section className="hero app-hero">
+        <div className="hero-copy">
+          <p className="eyebrow">Birthday Photo App</p>
+          <h1>Fast party photo sharing, split into clear screens.</h1>
+          <p className="hero-text">
+            Guests upload in seconds. Members join with code and PIN. Hosts review pending photos
+            without digging through one giant page.
+          </p>
+        </div>
+        <div className="hero-panel">
+          <div className="stat-row">
+            <span className="stat-kicker">Current screen</span>
+            <strong>{screens.find((screen) => screen.key === currentScreen)?.label || "Home"}</strong>
+          </div>
+          <div className="stat-row">
+            <span className="stat-kicker">Active event</span>
+            <strong>{activeEvent}</strong>
+          </div>
+          <div className="stat-row">
+            <span className="stat-kicker">Signed in as</span>
+            <strong>{signedInAs}</strong>
+          </div>
+          <p className={`notice notice-${notice.tone}`}>{notice.message}</p>
+        </div>
+      </section>
+
+      <nav className="route-nav" aria-label="Primary">
+        {screens.map((screen) => (
+          <Link
+            key={screen.key}
+            className={`route-pill ${screen.key === currentScreen ? "route-pill-active" : ""}`}
+            href={screen.href}
+          >
+            {screen.label}
+          </Link>
+        ))}
+      </nav>
+
+      {children}
+    </main>
+  );
+}
+
+function HomeScreen() {
+  return (
+    <section className="content-section route-section">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Overview</p>
+          <h2>Choose the screen that matches the job.</h2>
+        </div>
+      </div>
+      <div className="route-grid">
+        <Link className="card route-card" href="/auth">
+          <p className="section-label">1</p>
+          <h2>Sign in</h2>
+          <p>Hosts and members authenticate here with email and password.</p>
+        </Link>
+        <Link className="card route-card" href="/join">
+          <p className="section-label">2</p>
+          <h2>Join event</h2>
+          <p>Members unlock the gallery with an event code and PIN.</p>
+        </Link>
+        <Link className="card route-card" href="/upload">
+          <p className="section-label">3</p>
+          <h2>Guest upload</h2>
+          <p>Party guests can upload without creating an account.</p>
+        </Link>
+        <Link className="card route-card" href="/gallery">
+          <p className="section-label">4</p>
+          <h2>Shared gallery</h2>
+          <p>Members browse approved photos only.</p>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export function BirthdayApp() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const currentScreen = screenByPathname.get(pathname) || "home";
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,18 +294,10 @@ export function BirthdayApp() {
   const [queue, setQueue] = useState<PhotoCard[]>(hasSupabaseClientEnv ? [] : demoQueue);
 
   const isAdmin = member?.role === "owner" || member?.role === "admin";
-
-  const welcomeLabel = useMemo(() => {
-    if (profile?.display_name) {
-      return profile.display_name;
-    }
-
-    if (session?.user?.email) {
-      return session.user.email;
-    }
-
-    return "Guest";
-  }, [profile?.display_name, session?.user?.email]);
+  const welcomeLabel = useMemo(() => profile?.display_name || session?.user?.email || "Guest", [
+    profile?.display_name,
+    session?.user?.email,
+  ]);
 
   useEffect(() => {
     if (!hasSupabaseClientEnv) {
@@ -171,80 +356,14 @@ export function BirthdayApp() {
       return;
     }
 
-    const supabase = getSupabaseClient();
     setDashboardBusy(true);
 
     try {
-      const [{ data: eventData, error: eventError }, { data: memberData, error: memberError }] =
-        await Promise.all([
-          supabase
-            .from("events")
-            .select("id, title, public_code, moderation_required, created_at")
-            .eq("id", eventId)
-            .maybeSingle(),
-          supabase
-            .from("event_members")
-            .select("id, event_id, user_id, role, joined_at")
-            .eq("event_id", eventId)
-            .eq("user_id", session.user.id)
-            .maybeSingle(),
-        ]);
-
-      if (eventError) {
-        throw new Error(eventError.message);
-      }
-
-      if (memberError) {
-        throw new Error(memberError.message);
-      }
-
-      setEvent(eventData);
-      setMember(memberData);
-
-      const photoQuery = supabase
-        .from("photos")
-        .select(
-          "id, event_id, uploader_user_id, uploader_display_name, storage_path, caption, status, created_at",
-        )
-        .eq("event_id", eventId)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
-
-      const pendingQuery = supabase
-        .from("photos")
-        .select(
-          "id, event_id, uploader_user_id, uploader_display_name, storage_path, caption, status, created_at",
-        )
-        .eq("event_id", eventId)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-
-      const hasAdminAccess = memberData?.role === "owner" || memberData?.role === "admin";
-      const [photoResult, pendingResult] = await Promise.all([
-        photoQuery,
-        hasAdminAccess ? pendingQuery : Promise.resolve({ data: [], error: null }),
-      ]);
-
-      if (photoResult.error) {
-        throw new Error(photoResult.error.message);
-      }
-
-      if (pendingResult.error) {
-        throw new Error(pendingResult.error.message);
-      }
-
-      const approvedPhotos = photoResult.data || [];
-      const allVisiblePhotos = [...approvedPhotos, ...(pendingResult.data || [])];
-      const imageUrls = await createSignedViewUrls(allVisiblePhotos.map((item) => item.storage_path));
-
-      setGallery(
-        approvedPhotos.map((item) => buildPhotoCard(item, imageUrls.get(item.storage_path) ?? null)),
-      );
-      setQueue(
-        (pendingResult.data || []).map((item) =>
-          buildPhotoCard(item, imageUrls.get(item.storage_path) ?? null),
-        ),
-      );
+      const data = await fetchDashboardData(eventId, session.user.id);
+      setEvent(data.event);
+      setMember(data.member);
+      setGallery(data.gallery);
+      setQueue(data.queue);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load event dashboard.";
       setNotice({ message, tone: "error" });
@@ -260,7 +379,6 @@ export function BirthdayApp() {
 
     setAuthBusy(true);
     const supabase = getSupabaseClient();
-
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -270,7 +388,6 @@ export function BirthdayApp() {
         },
       },
     });
-
     setAuthBusy(false);
 
     if (error) {
@@ -282,6 +399,7 @@ export function BirthdayApp() {
       message: "Account created. Check your email if confirmation is enabled, then sign in.",
       tone: "success",
     });
+    router.push("/join");
   }
 
   async function handleSignIn(eventForm: FormEvent<HTMLFormElement>) {
@@ -302,26 +420,7 @@ export function BirthdayApp() {
     }
 
     setNotice({ message: "Signed in.", tone: "success" });
-  }
-
-  async function handleGoogleSignIn() {
-    if (!hasSupabaseClientEnv) {
-      return;
-    }
-
-    setAuthBusy(true);
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      setAuthBusy(false);
-      setNotice({ message: error.message, tone: "error" });
-    }
+    router.push("/join");
   }
 
   async function handleSignOut() {
@@ -337,6 +436,7 @@ export function BirthdayApp() {
     setGallery([]);
     setQueue([]);
     setNotice({ message: "Signed out.", tone: "neutral" });
+    router.push("/");
   }
 
   async function handleJoinEvent(eventForm: FormEvent<HTMLFormElement>) {
@@ -374,6 +474,7 @@ export function BirthdayApp() {
         pin: joinForm.pin,
       }));
       setNotice({ message: "Joined event. Gallery unlocked.", tone: "success" });
+      router.push("/gallery");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to join event.";
       setNotice({ message, tone: "error" });
@@ -427,7 +528,6 @@ export function BirthdayApp() {
 
       setUploadForm((current) => ({
         ...current,
-        uploaderName: current.uploaderName,
         file: null,
       }));
       setNotice({
@@ -441,6 +541,8 @@ export function BirthdayApp() {
       if (event?.id && session?.user) {
         await loadEventDashboard(event.id);
       }
+
+      router.push("/gallery");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed.";
       setNotice({ message, tone: "error" });
@@ -465,11 +567,7 @@ export function BirthdayApp() {
       const supabase = getSupabaseClient();
       const nextStatus = action === "approve" ? "approved" : "rejected";
 
-      const { error: updateError } = await supabase
-        .from("photos")
-        .update({ status: nextStatus })
-        .eq("id", photoId);
-
+      const { error: updateError } = await supabase.from("photos").update({ status: nextStatus }).eq("id", photoId);
       if (updateError) {
         throw new Error(updateError.message);
       }
@@ -478,7 +576,6 @@ export function BirthdayApp() {
         photo_id: photoId,
         action,
       });
-
       if (auditError) {
         throw new Error(auditError.message);
       }
@@ -496,338 +593,326 @@ export function BirthdayApp() {
     }
   }
 
-  return (
-    <main className="page-shell">
-      <section className="hero">
-        <div className="hero-copy">
-          <p className="eyebrow">Phase 3 frontend</p>
-          <h1>Birthday sharing built for a crowded phone at a real party.</h1>
-          <p className="hero-text">
-            Guests can upload fast with an event code and PIN. Signed-in members can join,
-            browse the shared gallery, and moderators can review pending photos.
-          </p>
-          <div className="hero-actions">
-            <a href="#upload-card" className="button button-primary">
-              Upload a photo
-            </a>
-            <a href="#member-card" className="button button-secondary">
-              Join event
-            </a>
-          </div>
-        </div>
-        <div className="hero-panel">
-          <div className="stat-row">
-            <span className="stat-kicker">Current mode</span>
-            <strong>{hasSupabaseClientEnv ? "Live Supabase wiring" : "Demo fallback state"}</strong>
-          </div>
-          <div className="stat-row">
-            <span className="stat-kicker">Active event</span>
-            <strong>{event?.title || "Join an event to unlock the dashboard"}</strong>
-          </div>
-          <div className="stat-row">
-            <span className="stat-kicker">Signed in as</span>
-            <strong>{session?.user?.email || "Anonymous guest"}</strong>
-          </div>
-          <p className={`notice notice-${notice.tone}`}>{notice.message}</p>
-        </div>
-      </section>
+  const activeEventLabel = event?.title || "Join an event to unlock the dashboard";
+  const signedInAs = session?.user?.email || "Anonymous guest";
 
-      <section className="grid-layout">
-        <article className="card" id="auth-card">
-          <div className="card-header">
-            <div>
-              <p className="section-label">Auth</p>
-              <h2>Sign up, sign in, or use Google</h2>
+  return (
+    <AppFrame
+      activeEvent={activeEventLabel}
+      currentScreen={currentScreen}
+      notice={notice}
+      signedInAs={signedInAs}
+    >
+      {currentScreen === "home" ? <HomeScreen /> : null}
+
+      {currentScreen === "auth" ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Auth</p>
+                <h2>Sign in or create your account</h2>
+              </div>
+              {session?.user ? (
+                <button className="button button-secondary" onClick={handleSignOut} type="button">
+                  Sign out
+                </button>
+              ) : null}
             </div>
-            {session?.user ? (
-              <button className="button button-secondary" onClick={handleSignOut} type="button">
-                Sign out
+
+            <form className="stack" onSubmit={handleSignIn}>
+              <label className="field">
+                <span>Full name</span>
+                <input
+                  onChange={(eventInput) => setFullName(eventInput.target.value)}
+                  placeholder="Maya"
+                  value={fullName}
+                />
+              </label>
+              <label className="field">
+                <span>Email</span>
+                <input
+                  onChange={(eventInput) => setEmail(eventInput.target.value)}
+                  placeholder="maya@example.com"
+                  type="email"
+                  value={email}
+                />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input
+                  onChange={(eventInput) => setPassword(eventInput.target.value)}
+                  placeholder="At least 6 characters"
+                  type="password"
+                  value={password}
+                />
+              </label>
+              <div className="button-row">
+                <button className="button button-primary" disabled={authBusy || !hasSupabaseClientEnv}>
+                  {authBusy ? "Working..." : "Sign in"}
+                </button>
+                <button
+                  className="button button-secondary"
+                  disabled={authBusy || !hasSupabaseClientEnv}
+                  onClick={() => void handleSignUp()}
+                  type="button"
+                >
+                  Create account
+                </button>
+              </div>
+            </form>
+          </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "join" ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Member flow</p>
+                <h2>Join with event code and PIN</h2>
+              </div>
+              <span className="pill">{session?.user ? "Signed in" : "Auth required"}</span>
+            </div>
+
+            <form className="stack" onSubmit={handleJoinEvent}>
+              <label className="field">
+                <span>Event code</span>
+                <input
+                  onChange={(eventInput) =>
+                    setJoinForm((current) => ({ ...current, eventCode: eventInput.target.value.toUpperCase() }))
+                  }
+                  placeholder="AVA5"
+                  value={joinForm.eventCode}
+                />
+              </label>
+              <label className="field">
+                <span>PIN</span>
+                <input
+                  onChange={(eventInput) =>
+                    setJoinForm((current) => ({ ...current, pin: eventInput.target.value }))
+                  }
+                  placeholder="4 digit PIN"
+                  value={joinForm.pin}
+                />
+              </label>
+              <button className="button button-primary" disabled={joinBusy || !session?.user}>
+                {joinBusy ? "Joining..." : "Join event"}
+              </button>
+            </form>
+          </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "upload" ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Guest upload</p>
+                <h2>Upload without creating an account</h2>
+              </div>
+              <span className="pill">
+                {event?.moderation_required ? "Host approval enabled" : "Auto-approve event"}
+              </span>
+            </div>
+
+            <form className="stack" onSubmit={handleUpload}>
+              <label className="field">
+                <span>Event code</span>
+                <input
+                  onChange={(eventInput) =>
+                    setUploadForm((current) => ({
+                      ...current,
+                      eventCode: eventInput.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="AVA5"
+                  value={uploadForm.eventCode}
+                />
+              </label>
+              <label className="field">
+                <span>PIN</span>
+                <input
+                  onChange={(eventInput) =>
+                    setUploadForm((current) => ({ ...current, pin: eventInput.target.value }))
+                  }
+                  placeholder="4 digit PIN"
+                  value={uploadForm.pin}
+                />
+              </label>
+              <label className="field">
+                <span>Your name</span>
+                <input
+                  onChange={(eventInput) =>
+                    setUploadForm((current) => ({ ...current, uploaderName: eventInput.target.value }))
+                  }
+                  placeholder="Optional"
+                  value={uploadForm.uploaderName}
+                />
+              </label>
+              <label className="field">
+                <span>Photo</span>
+                <input accept=".jpg,.jpeg,.png,.heic,.webp,image/*" onChange={handleFileChange} type="file" />
+              </label>
+              <button
+                className="button button-primary"
+                disabled={uploadBusy || !hasSupabaseClientEnv || !uploadForm.file}
+              >
+                {uploadBusy ? "Uploading..." : "Send photo"}
+              </button>
+            </form>
+          </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "gallery" ? (
+        <section className="content-section route-section">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">Shared gallery</p>
+              <h2>Approved photos only</h2>
+            </div>
+            {event?.id && session?.user ? (
+              <button
+                className="button button-secondary"
+                disabled={dashboardBusy}
+                onClick={() => void loadEventDashboard(event.id)}
+                type="button"
+              >
+                {dashboardBusy ? "Refreshing..." : "Refresh"}
               </button>
             ) : null}
           </div>
 
-          <form className="stack" onSubmit={handleSignIn}>
-            <label className="field">
-              <span>Full name</span>
-              <input
-                onChange={(eventInput) => setFullName(eventInput.target.value)}
-                placeholder="Maya"
-                value={fullName}
-              />
-            </label>
-            <label className="field">
-              <span>Email</span>
-              <input
-                onChange={(eventInput) => setEmail(eventInput.target.value)}
-                placeholder="maya@example.com"
-                type="email"
-                value={email}
-              />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input
-                onChange={(eventInput) => setPassword(eventInput.target.value)}
-                placeholder="At least 6 characters"
-                type="password"
-                value={password}
-              />
-            </label>
-            <div className="button-row">
-              <button className="button button-primary" disabled={authBusy || !hasSupabaseClientEnv}>
-                {authBusy ? "Working..." : "Sign in"}
-              </button>
-              <button
-                className="button button-secondary"
-                disabled={authBusy || !hasSupabaseClientEnv}
-                onClick={handleGoogleSignIn}
-                type="button"
-              >
-                Google
-              </button>
-              <button
-                className="button button-secondary"
-                disabled={authBusy || !hasSupabaseClientEnv}
-                onClick={() => void handleSignUp()}
-                type="button"
-              >
-                Create account
-              </button>
+          {gallery.length === 0 ? (
+            <div className="empty-state">
+              <h3>No photos yet</h3>
+              <p>Join an event to load the gallery, or upload the first image as a guest.</p>
             </div>
-          </form>
-        </article>
-
-        <article className="card" id="member-card">
-          <div className="card-header">
-            <div>
-              <p className="section-label">Member flow</p>
-              <h2>Join with event code and PIN</h2>
-            </div>
-            <span className="pill">{session?.user ? "Signed in" : "Auth required"}</span>
-          </div>
-
-          <form className="stack" onSubmit={handleJoinEvent}>
-            <label className="field">
-              <span>Event code</span>
-              <input
-                onChange={(eventInput) =>
-                  setJoinForm((current) => ({ ...current, eventCode: eventInput.target.value.toUpperCase() }))
-                }
-                placeholder="AVA5"
-                value={joinForm.eventCode}
-              />
-            </label>
-            <label className="field">
-              <span>PIN</span>
-              <input
-                onChange={(eventInput) =>
-                  setJoinForm((current) => ({ ...current, pin: eventInput.target.value }))
-                }
-                placeholder="4 digit PIN"
-                value={joinForm.pin}
-              />
-            </label>
-            <button className="button button-primary" disabled={joinBusy || !session?.user}>
-              {joinBusy ? "Joining..." : "Join event"}
-            </button>
-          </form>
-        </article>
-
-        <article className="card" id="upload-card">
-          <div className="card-header">
-            <div>
-              <p className="section-label">Guest upload</p>
-              <h2>Upload without creating an account</h2>
-            </div>
-            <span className="pill">
-              {event?.moderation_required ? "Host approval enabled" : "Auto-approve event"}
-            </span>
-          </div>
-
-          <form className="stack" onSubmit={handleUpload}>
-            <label className="field">
-              <span>Event code</span>
-              <input
-                onChange={(eventInput) =>
-                  setUploadForm((current) => ({
-                    ...current,
-                    eventCode: eventInput.target.value.toUpperCase(),
-                  }))
-                }
-                placeholder="AVA5"
-                value={uploadForm.eventCode}
-              />
-            </label>
-            <label className="field">
-              <span>PIN</span>
-              <input
-                onChange={(eventInput) =>
-                  setUploadForm((current) => ({ ...current, pin: eventInput.target.value }))
-                }
-                placeholder="4 digit PIN"
-                value={uploadForm.pin}
-              />
-            </label>
-            <label className="field">
-              <span>Your name</span>
-              <input
-                onChange={(eventInput) =>
-                  setUploadForm((current) => ({ ...current, uploaderName: eventInput.target.value }))
-                }
-                placeholder="Optional"
-                value={uploadForm.uploaderName}
-              />
-            </label>
-            <label className="field">
-              <span>Photo</span>
-              <input accept=".jpg,.jpeg,.png,.heic,.webp,image/*" onChange={handleFileChange} type="file" />
-            </label>
-            <button
-              className="button button-primary"
-              disabled={uploadBusy || !hasSupabaseClientEnv || !uploadForm.file}
-            >
-              {uploadBusy ? "Uploading..." : "Send photo"}
-            </button>
-          </form>
-        </article>
-
-        <article className="card">
-          <div className="card-header">
-            <div>
-              <p className="section-label">Profile</p>
-              <h2>{welcomeLabel}</h2>
-            </div>
-            <span className="pill">{member?.role || "guest-only"}</span>
-          </div>
-          <dl className="detail-list">
-            <div>
-              <dt>Email</dt>
-              <dd>{session?.user?.email || "Not signed in"}</dd>
-            </div>
-            <div>
-              <dt>Joined event</dt>
-              <dd>{event?.title || "No event joined yet"}</dd>
-            </div>
-            <div>
-              <dt>My photos</dt>
-              <dd>Photos-of-me matching is intentionally a placeholder in this phase.</dd>
-            </div>
-          </dl>
-        </article>
-      </section>
-
-      <section className="content-section">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Shared gallery</p>
-            <h2>Visible to event members after join</h2>
-          </div>
-          {event?.id && session?.user ? (
-            <button
-              className="button button-secondary"
-              disabled={dashboardBusy}
-              onClick={() => void loadEventDashboard(event.id)}
-              type="button"
-            >
-              {dashboardBusy ? "Refreshing..." : "Refresh"}
-            </button>
-          ) : null}
-        </div>
-
-        {gallery.length === 0 ? (
-          <div className="empty-state">
-            <h3>No photos yet</h3>
-            <p>Join an event to load the gallery, or upload the first image as a guest.</p>
-          </div>
-        ) : (
-          <div className="photo-grid">
-            {gallery.map((item) => (
-              <article className="photo-card" key={item.id}>
-                <div className="photo-frame">
-                  {item.imageUrl ? (
-                    <Image alt={item.title} fill sizes="(max-width: 960px) 100vw, 33vw" src={item.imageUrl} unoptimized />
-                  ) : (
-                    <div className="photo-fallback" />
-                  )}
-                </div>
-                <div className="photo-copy">
-                  <div className="photo-copy-top">
-                    <h3>{item.title}</h3>
-                    <span className={`status status-${item.status}`}>{item.status}</span>
+          ) : (
+            <div className="photo-grid">
+              {gallery.map((item) => (
+                <article className="photo-card" key={item.id}>
+                  <div className="photo-frame">
+                    {item.imageUrl ? (
+                      <Image alt={item.title} fill sizes="(max-width: 960px) 100vw, 33vw" src={item.imageUrl} unoptimized />
+                    ) : (
+                      <div className="photo-fallback" />
+                    )}
                   </div>
-                  <p>{item.subtitle}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+                  <div className="photo-copy">
+                    <div className="photo-copy-top">
+                      <h3>{item.title}</h3>
+                      <span className={`status status-${item.status}`}>{item.status}</span>
+                    </div>
+                    <p>{item.subtitle}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      <section className="content-section">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">Admin moderation</p>
-            <h2>Pending review queue</h2>
+      {currentScreen === "admin" ? (
+        <section className="content-section route-section">
+          <div className="section-heading">
+            <div>
+              <p className="section-label">Admin moderation</p>
+              <h2>Pending review queue</h2>
+            </div>
+            <span className="pill">{isAdmin ? "Admin access" : "Read-only placeholder"}</span>
           </div>
-          <span className="pill">{isAdmin ? "Admin access" : "Read-only placeholder"}</span>
-        </div>
 
-        {!isAdmin && hasSupabaseClientEnv ? (
-          <div className="empty-state">
-            <h3>Admin view locked</h3>
-            <p>Pending moderation loads only for members with owner or admin roles.</p>
-          </div>
-        ) : queue.length === 0 ? (
-          <div className="empty-state">
-            <h3>Queue is clear</h3>
-            <p>No photos are waiting on approval right now.</p>
-          </div>
-        ) : (
-          <div className="queue-list">
-            {queue.map((item) => (
-              <article className="queue-card" key={item.id}>
-                <div className="queue-preview">
-                  {item.imageUrl ? (
-                    <Image alt={item.title} fill sizes="(max-width: 640px) 100vw, 92px" src={item.imageUrl} unoptimized />
-                  ) : null}
-                </div>
-                <div className="queue-copy">
-                  <h3>{item.title}</h3>
-                  <p>{item.subtitle}</p>
-                </div>
-                <div className="queue-actions">
-                  <span className="status status-pending">pending</span>
-                  <button
-                    className="button button-secondary"
-                    disabled={moderationBusyId === item.id}
-                    onClick={() => void handleModeration(item.id, "approve")}
-                    type="button"
-                  >
-                    {moderationBusyId === item.id ? "Working..." : "Approve"}
-                  </button>
-                  <button
-                    className="button button-secondary"
-                    disabled={moderationBusyId === item.id}
-                    onClick={() => void handleModeration(item.id, "reject")}
-                    type="button"
-                  >
-                    {moderationBusyId === item.id ? "Working..." : "Reject"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+          {!isAdmin && hasSupabaseClientEnv ? (
+            <div className="empty-state">
+              <h3>Admin view locked</h3>
+              <p>Pending moderation loads only for members with owner or admin roles.</p>
+            </div>
+          ) : queue.length === 0 ? (
+            <div className="empty-state">
+              <h3>Queue is clear</h3>
+              <p>No photos are waiting on approval right now.</p>
+            </div>
+          ) : (
+            <div className="queue-list">
+              {queue.map((item) => (
+                <article className="queue-card" key={item.id}>
+                  <div className="queue-preview">
+                    {item.imageUrl ? (
+                      <Image alt={item.title} fill sizes="(max-width: 640px) 100vw, 92px" src={item.imageUrl} unoptimized />
+                    ) : null}
+                  </div>
+                  <div className="queue-copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.subtitle}</p>
+                  </div>
+                  <div className="queue-actions">
+                    <span className="status status-pending">pending</span>
+                    <button
+                      className="button button-secondary"
+                      disabled={moderationBusyId === item.id}
+                      onClick={() => void handleModeration(item.id, "approve")}
+                      type="button"
+                    >
+                      {moderationBusyId === item.id ? "Working..." : "Approve"}
+                    </button>
+                    <button
+                      className="button button-secondary"
+                      disabled={moderationBusyId === item.id}
+                      onClick={() => void handleModeration(item.id, "reject")}
+                      type="button"
+                    >
+                      {moderationBusyId === item.id ? "Working..." : "Reject"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      <section className="content-section placeholder-panel">
-        <p className="section-label">Photos of me</p>
-        <h2>Placeholder only for this phase</h2>
-        <p>
-          The UX keeps this destination visible, but face matching is not implemented and the backend
-          contract does not expose a search flow yet.
-        </p>
-      </section>
-    </main>
+      {currentScreen === "profile" ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Profile</p>
+                <h2>{welcomeLabel}</h2>
+              </div>
+              <span className="pill">{member?.role || "guest-only"}</span>
+            </div>
+            <dl className="detail-list">
+              <div>
+                <dt>Email</dt>
+                <dd>{session?.user?.email || "Not signed in"}</dd>
+              </div>
+              <div>
+                <dt>Joined event</dt>
+                <dd>{event?.title || "No event joined yet"}</dd>
+              </div>
+              <div>
+                <dt>My photos</dt>
+                <dd>Photos-of-me matching is intentionally a placeholder in this phase.</dd>
+              </div>
+            </dl>
+          </article>
+        </section>
+      ) : null}
+
+      {currentScreen === "photos-of-me" ? (
+        <section className="content-section placeholder-panel route-section">
+          <p className="section-label">Photos of me</p>
+          <h2>Placeholder only for this phase</h2>
+          <p>
+            The UX keeps this destination visible, but face matching is not implemented and the backend
+            contract does not expose a search flow yet.
+          </p>
+        </section>
+      ) : null}
+    </AppFrame>
   );
 }
