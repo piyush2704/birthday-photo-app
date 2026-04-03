@@ -833,7 +833,7 @@ img {
   text-align: center;
   gap: 10px;
   max-width: 38rem;
-  margin: 0 auto 20px;
+  margin: 0 auto 28px;
   padding: 10px 14px;
 }
 
@@ -1065,13 +1065,16 @@ img {
 
 .gallery-masonry {
   column-count: 2;
-  column-gap: 14px;
+  column-gap: 10px;
   margin-top: 20px;
 }
 
 .gallery-masonry-item {
   break-inside: avoid;
-  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 10px;
+  border-radius: 24px;
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
@@ -1098,11 +1101,43 @@ img {
   background: linear-gradient(135deg, rgba(255, 221, 163, 0.52), rgba(110, 143, 184, 0.14));
 }
 
+.gallery-photo-frame {
+  border-radius: 24px;
+}
+
 .photo-frame img,
 .queue-preview img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.gallery-photo-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, 0.58) 100%);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.gallery-masonry-item:hover .gallery-photo-overlay {
+  opacity: 1;
+}
+
+.gallery-photo-overlay p {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.gallery-heart {
+  font-size: 0.9rem;
 }
 
 .photo-glow {
@@ -1223,6 +1258,12 @@ img {
   background: linear-gradient(135deg, #ff9b71, #ff7a45);
   color: #fff;
   box-shadow: 0 20px 40px rgba(255, 122, 69, 0.28);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.floating-upload-cta:hover {
+  transform: scale(1.05);
+  box-shadow: 0 24px 46px rgba(255, 122, 69, 0.36);
 }
 
 .floating-upload-plus {
@@ -1277,6 +1318,18 @@ img {
 .gallery-lightbox-copy p {
   margin-top: 6px;
   color: var(--muted);
+}
+
+.gallery-footer-note {
+  margin-top: 26px;
+  padding-bottom: 96px;
+  text-align: center;
+}
+
+.gallery-footer-note p {
+  margin: 0;
+  color: #a08b75;
+  font-style: italic;
 }
 
 .upload-card {
@@ -1556,6 +1609,13 @@ img {
   .gallery-masonry {
     column-count: 1;
     column-gap: 0;
+  }
+
+  .floating-upload-cta {
+    right: 14px;
+    bottom: 18px;
+    min-height: 52px;
+    padding: 0 16px;
   }
 
   .queue-preview {

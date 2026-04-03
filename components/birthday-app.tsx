@@ -90,12 +90,6 @@ type BirthdayAppProps = {
   initialGuestAccess?: GuestAccess;
 };
 
-const highlightMoments = [
-  { title: "First smile", note: "Tiny giggles and bright eyes", orbit: "Orbit 01" },
-  { title: "First steps", note: "A year of little milestones", orbit: "Orbit 02" },
-  { title: "Birthday glow", note: "Celebrating Vaayu's big day", orbit: "Orbit 03" },
-];
-
 const messageIdeas = [
   "Share the photo that feels most like Vaayu's sunshine.",
   "Add your favorite candid moment from the celebration.",
@@ -1353,8 +1347,8 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           <div className="gallery-hero">
             <div>
               <p className="section-label">Gallery</p>
-              <h2>Vaayu&apos;s Birthday Gallery</h2>
-              <p className="gallery-subtitle">A year of wonder, smiles, and sunshine.</p>
+              <h2>A Year of Wonder</h2>
+              <p className="gallery-subtitle">365 days of smiles, giggles, and sunshine ☀️</p>
             </div>
             {event?.id && session?.user ? (
               <button
@@ -1366,15 +1360,6 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
                 {dashboardBusy ? "Refreshing..." : "Refresh"}
               </button>
             ) : null}
-          </div>
-          <div className="highlight-strip feed-highlights">
-            {highlightMoments.map((item) => (
-              <article className="highlight-card compact" key={item.title}>
-                <div className="highlight-orbit">{item.orbit}</div>
-                <h3>{item.title}</h3>
-                <p>{item.note}</p>
-              </article>
-            ))}
           </div>
 
           {gallery.length === 0 ? (
@@ -1392,11 +1377,11 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
             <div className="gallery-masonry">
               {gallery.map((item) => (
                 <article
-                  className="photo-card gallery-masonry-item"
+                  className="gallery-masonry-item"
                   key={item.id}
                   onClick={() => setSelectedPhotoId(item.id)}
                 >
-                  <div className="photo-frame">
+                  <div className="photo-frame gallery-photo-frame">
                     {item.imageUrl ? (
                       <Image
                         alt={item.title}
@@ -1408,23 +1393,26 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
                     ) : (
                       <div className="photo-fallback" />
                     )}
-                    <div className="photo-glow" />
-                  </div>
-                  <div className="photo-copy">
-                    <div className="photo-copy-top">
-                      <h3>{item.title}</h3>
+                    <div className="gallery-photo-overlay">
+                      <p>
+                        <span className="gallery-heart">♥</span>
+                        {item.title}
+                      </p>
                     </div>
-                    <p>{item.subtitle}</p>
                   </div>
                 </article>
               ))}
             </div>
           )}
 
+          <div className="gallery-footer-note">
+            <p>Every moment tells a story of love and light 💫</p>
+          </div>
+
           {isGuestFlow ? (
             <Link className="floating-upload-cta" href={guestUploadHref}>
               <span className="floating-upload-plus">+</span>
-              <span>Upload</span>
+              <span>Upload Photos</span>
             </Link>
           ) : null}
 
