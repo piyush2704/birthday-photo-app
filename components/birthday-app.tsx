@@ -235,6 +235,11 @@ function AppFrame({
             <div className="hero-parallax" aria-hidden="true">
               <div className="parallax-orbit parallax-orbit-back" />
               <div className="parallax-orbit parallax-orbit-mid" />
+              <div className="parallax-ribbons">
+                <span />
+                <span />
+                <span />
+              </div>
               <div className="parallax-stars">
                 <span />
                 <span />
@@ -242,6 +247,14 @@ function AppFrame({
                 <span />
                 <span />
                 <span />
+              </div>
+              <div className="balloon-cluster balloon-left">
+                <span className="balloon balloon-gold" />
+                <span className="balloon balloon-cream" />
+              </div>
+              <div className="balloon-cluster balloon-right">
+                <span className="balloon balloon-sky" />
+                <span className="balloon balloon-apricot" />
               </div>
               <div className="birthday-cake">
                 <div className="cake-candle candle-one">
@@ -267,14 +280,13 @@ function AppFrame({
             A warm, image-led celebration space where family and friends can share memories, browse
             {" the day, and keep Vaayu's first birthday story together in one place."}
           </p>
-          <div className="hero-actions">
-            <Link className="button button-primary" href={guestUploadHref}>
-              Share a Memory
-            </Link>
-            <Link className="button button-secondary" href={guestGalleryHref}>
-              View the Gallery
-            </Link>
-          </div>
+          {publicLanding ? (
+            <div className="hero-memory-tags">
+              <span className="memory-tag">Candles</span>
+              <span className="memory-tag">Cake</span>
+              <span className="memory-tag">Family photos</span>
+            </div>
+          ) : null}
         </div>
         {!compactGuestShell ? (
           <div className="hero-panel">

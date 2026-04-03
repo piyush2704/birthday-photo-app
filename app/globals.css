@@ -97,15 +97,18 @@ img {
   background: var(--surface);
   box-shadow: var(--shadow);
   backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .hero-copy {
   position: relative;
   overflow: hidden;
+  isolation: isolate;
   padding: 28px;
   background:
-    radial-gradient(circle at top right, rgba(255, 230, 170, 0.9), transparent 38%),
-    radial-gradient(circle at bottom left, rgba(223, 241, 255, 0.72), transparent 32%),
+    radial-gradient(circle at top right, rgba(255, 230, 170, 0.95), transparent 34%),
+    radial-gradient(circle at bottom left, rgba(223, 241, 255, 0.78), transparent 30%),
+    linear-gradient(180deg, rgba(255, 251, 246, 0.96) 0%, rgba(255, 243, 232, 0.92) 100%),
     var(--surface);
 }
 
@@ -160,6 +163,33 @@ img {
   opacity: 0.42;
 }
 
+.parallax-ribbons span {
+  position: absolute;
+  width: 140px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(243, 140, 87, 0), rgba(243, 140, 87, 0.5), rgba(255, 199, 104, 0));
+  filter: blur(1px);
+}
+
+.parallax-ribbons span:nth-child(1) {
+  top: 52px;
+  right: 180px;
+  transform: rotate(20deg);
+}
+
+.parallax-ribbons span:nth-child(2) {
+  top: 138px;
+  right: 58px;
+  transform: rotate(-18deg);
+}
+
+.parallax-ribbons span:nth-child(3) {
+  top: 220px;
+  right: 220px;
+  transform: rotate(16deg);
+}
+
 .parallax-stars span,
 .scene-star {
   position: absolute;
@@ -202,10 +232,10 @@ img {
 
 .birthday-cake {
   position: absolute;
-  right: 42px;
-  bottom: 22px;
-  width: 214px;
-  height: 214px;
+  right: 34px;
+  bottom: 10px;
+  width: 250px;
+  height: 250px;
 }
 
 .cake-top,
@@ -221,29 +251,29 @@ img {
 }
 
 .cake-top {
-  bottom: 108px;
-  width: 92px;
-  height: 34px;
+  bottom: 126px;
+  width: 110px;
+  height: 38px;
 }
 
 .cake-middle {
-  bottom: 68px;
-  width: 132px;
-  height: 42px;
+  bottom: 82px;
+  width: 154px;
+  height: 48px;
 }
 
 .cake-bottom {
-  bottom: 20px;
-  width: 170px;
-  height: 52px;
+  bottom: 26px;
+  width: 198px;
+  height: 60px;
 }
 
 .cake-plate {
   position: absolute;
   left: 50%;
-  bottom: 7px;
-  width: 190px;
-  height: 18px;
+  bottom: 10px;
+  width: 220px;
+  height: 20px;
   transform: translateX(-50%);
   border-radius: 999px;
   background: linear-gradient(180deg, #fff, #f0dac4);
@@ -252,36 +282,94 @@ img {
 
 .cake-candle {
   position: absolute;
-  bottom: 138px;
-  width: 12px;
-  height: 42px;
+  bottom: 160px;
+  width: 14px;
+  height: 48px;
   border-radius: 999px;
   border: 1px solid rgba(243, 140, 87, 0.2);
   background: linear-gradient(180deg, #fffdf7 0%, #ffbf81 100%);
 }
 
 .candle-one {
-  left: 72px;
+  left: 80px;
 }
 
 .candle-two {
-  left: 100px;
+  left: 116px;
 }
 
 .candle-three {
-  left: 128px;
+  left: 152px;
 }
 
 .candle-flame {
   position: absolute;
-  top: -16px;
+  top: -18px;
   left: 50%;
-  width: 14px;
-  height: 18px;
+  width: 16px;
+  height: 20px;
   transform: translateX(-50%);
   border-radius: 70% 70% 70% 70%;
   background: radial-gradient(circle at 50% 35%, #fff8c9 0%, #ffca57 55%, #f38c57 100%);
   box-shadow: 0 0 18px rgba(255, 193, 77, 0.85);
+}
+
+.balloon-cluster {
+  position: absolute;
+  width: 150px;
+  height: 180px;
+}
+
+.balloon-left {
+  top: 28px;
+  left: -8px;
+}
+
+.balloon-right {
+  top: 30px;
+  right: 128px;
+}
+
+.balloon {
+  position: absolute;
+  width: 56px;
+  height: 72px;
+  border-radius: 50% 50% 46% 46%;
+  box-shadow: inset -10px -12px 0 rgba(255, 255, 255, 0.18);
+}
+
+.balloon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -44px;
+  width: 2px;
+  height: 44px;
+  background: rgba(116, 104, 95, 0.35);
+}
+
+.balloon-gold {
+  left: 4px;
+  top: 20px;
+  background: linear-gradient(180deg, #ffd978, #f6b04e);
+}
+
+.balloon-cream {
+  left: 52px;
+  top: 0;
+  background: linear-gradient(180deg, #fffaf1, #ffd9ba);
+}
+
+.balloon-sky {
+  left: 18px;
+  top: 2px;
+  background: linear-gradient(180deg, #e4f2ff, #8cb8ff);
+}
+
+.balloon-apricot {
+  left: 68px;
+  top: 28px;
+  background: linear-gradient(180deg, #ffd6bd, #f38c57);
 }
 
 .hero-orbit,
@@ -332,10 +420,10 @@ img {
 }
 
 .hero-text {
-  max-width: 34rem;
+  max-width: 30rem;
   margin: 18px 0 0;
-  font-size: 1.06rem;
-  line-height: 1.65;
+  font-size: 1.08rem;
+  line-height: 1.7;
   color: var(--muted);
 }
 
@@ -345,6 +433,27 @@ img {
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 22px;
+}
+
+.hero-memory-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.memory-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(243, 140, 87, 0.14);
+  color: var(--orbit-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .hero-panel {
@@ -553,6 +662,10 @@ img {
 
 .guest-home {
   margin-top: 0;
+  background:
+    radial-gradient(circle at top right, rgba(255, 214, 144, 0.28), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(223, 241, 255, 0.4), transparent 26%),
+    var(--surface);
 }
 
 .intro-grid {
@@ -952,14 +1065,44 @@ img {
   }
 
   .birthday-cake {
-    right: 16px;
-    bottom: 12px;
-    transform: scale(0.82);
-    transform-origin: bottom right;
+    right: 50%;
+    bottom: 8px;
+    transform: translateX(50%) scale(0.78);
+    transform-origin: bottom center;
+  }
+
+  .balloon-left,
+  .balloon-right {
+    transform: scale(0.78);
+  }
+
+  .balloon-left {
+    left: -24px;
+    top: 72px;
+  }
+
+  .balloon-right {
+    right: -22px;
+    top: 82px;
+  }
+
+  .parallax-orbit-back {
+    right: -200px;
+  }
+
+  .parallax-orbit-mid {
+    right: 50%;
+    bottom: 64px;
+    transform: translateX(50%) rotate(-12deg);
   }
 
   .hero-copy h1 {
     font-size: clamp(2.8rem, 15vw, 4.5rem);
+    max-width: 9ch;
+  }
+
+  .hero-copy {
+    padding-bottom: 230px;
   }
 
   .button,
