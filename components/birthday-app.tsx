@@ -8,6 +8,7 @@ import type { Session } from "@supabase/supabase-js";
 import { demoEvent, demoGallery, demoProfile, demoQueue } from "../lib/mockData";
 import { functionsBaseUrl, getSupabaseClient, hasSupabaseClientEnv } from "../lib/supabaseClient";
 import type {
+  CreateEventResponse,
   EventMemberRecord,
   EventRecord,
   GuestUploadResponse,
@@ -37,7 +38,14 @@ type UploadForm = {
   file: File | null;
 };
 
-type ScreenKey = "home" | "auth" | "join" | "upload" | "gallery" | "admin" | "profile" | "photos-of-me";
+type HostForm = {
+  title: string;
+  publicCode: string;
+  pin: string;
+  moderationRequired: boolean;
+};
+
+type ScreenKey = "home" | "auth" | "host" | "join" | "upload" | "gallery" | "admin" | "profile" | "photos-of-me";
 
 type ScreenConfig = {
   key: ScreenKey;
@@ -55,6 +63,7 @@ type DashboardData = {
 const screens: ScreenConfig[] = [
   { key: "home", href: "/", label: "Home" },
   { key: "auth", href: "/auth", label: "Sign in" },
+  { key: "host", href: "/host", label: "Host" },
   { key: "join", href: "/join", label: "Join event" },
   { key: "upload", href: "/upload", label: "Upload" },
   { key: "gallery", href: "/gallery", label: "Gallery" },
@@ -64,6 +73,7 @@ const screens: ScreenConfig[] = [
 ];
 
 const screenByPathname = new Map<string, ScreenKey>(screens.map((screen) => [screen.href, screen.key]));
+const storedEventIdKey = "birthday-photo-app.event-id";
 
 function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("en-US", {
@@ -276,6 +286,12 @@ export function BirthdayApp() {
     uploaderName: "",
     file: null,
   });
+  const [hostForm, setHostForm] = useState<HostForm>({
+    title: "",
+    publicCode: "",
+    pin: "",
+    moderationRequired: true,
+  });
   const [notice, setNotice] = useState<Notice>({
     message: hasSupabaseClientEnv
       ? "Live client env detected. Auth, join-event, upload, and gallery reads are wired."
@@ -285,6 +301,7 @@ export function BirthdayApp() {
   const [authBusy, setAuthBusy] = useState(false);
   const [joinBusy, setJoinBusy] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
+  const [hostBusy, setHostBusy] = useState(false);
   const [dashboardBusy, setDashboardBusy] = useState(false);
   const [moderationBusyId, setModerationBusyId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(hasSupabaseClientEnv ? null : demoProfile);
@@ -335,6 +352,48 @@ export function BirthdayApp() {
     void loadProfile(session.user.id);
   }, [session?.user]);
 
+  useEffect(() => {
+    if (!hasSupabaseClientEnv || !session?.user || typeof window === "undefined") {
+      return;
+    }
+
+    const storedEventId = window.localStorage.getItem(storedEventIdKey);
+    if (!storedEventId || storedEventId === event?.id || dashboardBusy) {
+      return;
+    }
+
+    let active = true;
+
+    void (async () => {
+      setDashboardBusy(true);
+
+      try {
+        const data = await fetchDashboardData(storedEventId, session.user.id);
+        if (!active) {
+          return;
+        }
+        setEvent(data.event);
+        setMember(data.member);
+        setGallery(data.gallery);
+        setQueue(data.queue);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : "Failed to restore event dashboard.";
+        setNotice({ message, tone: "error" });
+      } finally {
+        if (active) {
+          setDashboardBusy(false);
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [dashboardBusy, event?.id, session?.user]);
+
   async function loadProfile(userId: string) {
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
@@ -364,6 +423,9 @@ export function BirthdayApp() {
       setMember(data.member);
       setGallery(data.gallery);
       setQueue(data.queue);
+      if (typeof window !== "undefined" && data.event?.id) {
+        window.localStorage.setItem(storedEventIdKey, data.event.id);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load event dashboard.";
       setNotice({ message, tone: "error" });
@@ -430,6 +492,9 @@ export function BirthdayApp() {
 
     const supabase = getSupabaseClient();
     await supabase.auth.signOut();
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(storedEventIdKey);
+    }
     setProfile(null);
     setEvent(null);
     setMember(null);
@@ -473,6 +538,9 @@ export function BirthdayApp() {
         eventCode: joinForm.eventCode,
         pin: joinForm.pin,
       }));
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(storedEventIdKey, data.event_id);
+      }
       setNotice({ message: "Joined event. Gallery unlocked.", tone: "success" });
       router.push("/gallery");
     } catch (error) {
@@ -480,6 +548,55 @@ export function BirthdayApp() {
       setNotice({ message, tone: "error" });
     } finally {
       setJoinBusy(false);
+    }
+  }
+
+  async function handleCreateEvent(eventForm: FormEvent<HTMLFormElement>) {
+    eventForm.preventDefault();
+
+    if (!hasSupabaseClientEnv || !session?.access_token) {
+      setNotice({ message: "Sign in before creating an event.", tone: "error" });
+      return;
+    }
+
+    setHostBusy(true);
+
+    try {
+      const response = await fetch(`${functionsBaseUrl}/create-event`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          title: hostForm.title.trim(),
+          public_code: hostForm.publicCode.trim().toUpperCase(),
+          pin: hostForm.pin.trim(),
+          moderation_required: hostForm.moderationRequired,
+        }),
+      });
+
+      const data = (await response.json()) as CreateEventResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create event.");
+      }
+
+      await loadEventDashboard(data.event_id);
+      setUploadForm((current) => ({
+        ...current,
+        eventCode: hostForm.publicCode.trim().toUpperCase(),
+        pin: hostForm.pin.trim(),
+      }));
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(storedEventIdKey, data.event_id);
+      }
+      setNotice({ message: "Event created. You are now the owner.", tone: "success" });
+      router.push("/admin");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create event.";
+      setNotice({ message, tone: "error" });
+    } finally {
+      setHostBusy(false);
     }
   }
 
@@ -665,6 +782,83 @@ export function BirthdayApp() {
         </section>
       ) : null}
 
+      {currentScreen === "host" ? (
+        <section className="content-section route-section">
+          <article className="card">
+            <div className="card-header">
+              <div>
+                <p className="section-label">Host setup</p>
+                <h2>Create a new event</h2>
+              </div>
+              <span className="pill">{session?.user ? "Ready" : "Sign in required"}</span>
+            </div>
+
+            <form className="stack" onSubmit={handleCreateEvent}>
+              <label className="field">
+                <span>Event title</span>
+                <input
+                  onChange={(eventInput) =>
+                    setHostForm((current) => ({ ...current, title: eventInput.target.value }))
+                  }
+                  placeholder="Ava's 5th Birthday"
+                  value={hostForm.title}
+                />
+              </label>
+              <label className="field">
+                <span>Event code</span>
+                <input
+                  onChange={(eventInput) =>
+                    setHostForm((current) => ({
+                      ...current,
+                      publicCode: eventInput.target.value.toUpperCase(),
+                    }))
+                  }
+                  placeholder="AVA5"
+                  value={hostForm.publicCode}
+                />
+              </label>
+              <label className="field">
+                <span>PIN</span>
+                <input
+                  onChange={(eventInput) =>
+                    setHostForm((current) => ({ ...current, pin: eventInput.target.value }))
+                  }
+                  placeholder="4 to 8 digits"
+                  value={hostForm.pin}
+                />
+              </label>
+              <label className="toggle-field">
+                <input
+                  checked={hostForm.moderationRequired}
+                  onChange={(eventInput) =>
+                    setHostForm((current) => ({
+                      ...current,
+                      moderationRequired: eventInput.target.checked,
+                    }))
+                  }
+                  type="checkbox"
+                />
+                <span>Require host approval before photos appear in the gallery</span>
+              </label>
+              <button className="button button-primary" disabled={hostBusy || !session?.user}>
+                {hostBusy ? "Creating..." : "Create event"}
+              </button>
+            </form>
+
+            {!session?.user ? (
+              <p className="inline-note">Sign in first, then come back here to create your event.</p>
+            ) : event ? (
+              <div className="host-summary">
+                <p className="section-label">Current event</p>
+                <h3>{event.title}</h3>
+                <p>Code: {event.public_code}</p>
+                <p>{event.moderation_required ? "Moderation is enabled." : "Uploads auto-approve."}</p>
+              </div>
+            ) : null}
+          </article>
+        </section>
+      ) : null}
+
       {currentScreen === "join" ? (
         <section className="content-section route-section">
           <article className="card">
@@ -701,6 +895,11 @@ export function BirthdayApp() {
                 {joinBusy ? "Joining..." : "Join event"}
               </button>
             </form>
+            {!session?.user ? (
+              <p className="inline-note">
+                You need an account before joining an event. Use the sign-in screen first.
+              </p>
+            ) : null}
           </article>
         </section>
       ) : null}
@@ -789,7 +988,11 @@ export function BirthdayApp() {
           {gallery.length === 0 ? (
             <div className="empty-state">
               <h3>No photos yet</h3>
-              <p>Join an event to load the gallery, or upload the first image as a guest.</p>
+              <p>
+                {session?.user
+                  ? "Join an event to load the gallery, or upload the first image as a guest."
+                  : "Sign in and join an event to unlock the shared gallery."}
+              </p>
             </div>
           ) : (
             <div className="photo-grid">
@@ -826,7 +1029,12 @@ export function BirthdayApp() {
             <span className="pill">{isAdmin ? "Admin access" : "Read-only placeholder"}</span>
           </div>
 
-          {!isAdmin && hasSupabaseClientEnv ? (
+          {!session?.user ? (
+            <div className="empty-state">
+              <h3>Sign in required</h3>
+              <p>Only signed-in hosts and admins can open the moderation queue.</p>
+            </div>
+          ) : !isAdmin && hasSupabaseClientEnv ? (
             <div className="empty-state">
               <h3>Admin view locked</h3>
               <p>Pending moderation loads only for members with owner or admin roles.</p>
@@ -899,6 +1107,11 @@ export function BirthdayApp() {
                 <dd>Photos-of-me matching is intentionally a placeholder in this phase.</dd>
               </div>
             </dl>
+            {!session?.user ? (
+              <p className="inline-note">
+                Sign in to see your real profile and any event membership tied to your account.
+              </p>
+            ) : null}
           </article>
         </section>
       ) : null}

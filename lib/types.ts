@@ -52,6 +52,17 @@ export type JoinEventResponse = {
   event_id: string;
 };
 
+export type CreateEventRequest = {
+  title: string;
+  public_code: string;
+  pin: string;
+  moderation_required: boolean;
+};
+
+export type CreateEventResponse = {
+  event_id: string;
+};
+
 export type GuestUploadRequest = {
   event_code: string;
   pin: string;

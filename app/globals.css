@@ -250,6 +250,18 @@ img {
   gap: 8px;
 }
 
+.toggle-field {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.toggle-field input {
+  margin-top: 4px;
+}
+
 .field span,
 .detail-list dt {
   font-size: 0.84rem;
@@ -343,6 +355,12 @@ img {
   line-height: 1.5;
 }
 
+.inline-note {
+  margin: 18px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .content-section {
   margin-top: 18px;
 }
@@ -362,6 +380,22 @@ img {
   margin: 8px 0 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.host-summary {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(29, 26, 23, 0.08);
+}
+
+.host-summary h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.host-summary p {
+  margin: 8px 0 0;
+  color: var(--muted);
 }
 
 .photo-grid {
