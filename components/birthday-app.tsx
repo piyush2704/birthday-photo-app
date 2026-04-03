@@ -86,6 +86,17 @@ type FilePreview = {
   name: string;
 };
 
+function galleryTileClassName(index: number) {
+  const cycle = index % 5;
+  if (cycle === 4) {
+    return "gallery-collage-item gallery-collage-item-wide";
+  }
+  if (cycle === 0 || cycle === 3) {
+    return "gallery-collage-item gallery-collage-item-tall";
+  }
+  return "gallery-collage-item gallery-collage-item-square";
+}
+
 type BirthdayAppProps = {
   initialGuestAccess?: GuestAccess;
 };
@@ -433,8 +444,9 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [guestAccess, setGuestAccess] = useState<GuestAccess>(
     initialGuestAccess || { eventCode: "", pin: "" },
   );
-  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
   const [filePreviews, setFilePreviews] = useState<FilePreview[]>([]);
+  const [lightboxTouchStart, setLightboxTouchStart] = useState<number | null>(null);
 
   const isAdmin = member?.role === "owner" || member?.role === "admin";
   const isGuestFlow = !session?.user;
@@ -1001,7 +1013,45 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const publicLanding = isGuestFlow && currentScreen === "home";
   const compactGuestShell = isGuestFlow && ["home", "upload", "gallery", "event"].includes(currentScreen);
   const openingPhotos = gallery.map((item) => item.imageUrl).filter((item): item is string => Boolean(item));
-  const selectedPhoto = gallery.find((item) => item.id === selectedPhotoId) || null;
+  const selectedPhoto =
+    selectedPhotoIndex !== null && selectedPhotoIndex >= 0 && selectedPhotoIndex < gallery.length
+      ? gallery[selectedPhotoIndex]
+      : null;
+
+  useEffect(() => {
+    if (selectedPhotoIndex === null) {
+      return;
+    }
+
+    function handleKeydown(eventKeyboard: KeyboardEvent) {
+      if (eventKeyboard.key === "Escape") {
+        setSelectedPhotoIndex(null);
+      }
+
+      if (eventKeyboard.key === "ArrowRight") {
+        setSelectedPhotoIndex((current) => {
+          if (current === null) {
+            return current;
+          }
+          return (current + 1) % gallery.length;
+        });
+      }
+
+      if (eventKeyboard.key === "ArrowLeft") {
+        setSelectedPhotoIndex((current) => {
+          if (current === null) {
+            return current;
+          }
+          return (current - 1 + gallery.length) % gallery.length;
+        });
+      }
+    }
+
+    window.addEventListener("keydown", handleKeydown);
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [gallery.length, selectedPhotoIndex]);
 
   return (
     <AppFrame
@@ -1374,12 +1424,12 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
               </p>
             </div>
           ) : (
-            <div className="gallery-masonry">
-              {gallery.map((item) => (
+            <div className="gallery-collage">
+              {gallery.map((item, index) => (
                 <article
-                  className="gallery-masonry-item"
+                  className={galleryTileClassName(index)}
                   key={item.id}
-                  onClick={() => setSelectedPhotoId(item.id)}
+                  onClick={() => setSelectedPhotoIndex(index)}
                 >
                   <div className="photo-frame gallery-photo-frame">
                     {item.imageUrl ? (
@@ -1417,8 +1467,66 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           ) : null}
 
           {selectedPhoto ? (
-            <button className="gallery-lightbox" onClick={() => setSelectedPhotoId(null)} type="button">
-              <div className="gallery-lightbox-frame" onClick={(eventClick) => eventClick.stopPropagation()}>
+            <button className="gallery-lightbox" onClick={() => setSelectedPhotoIndex(null)} type="button">
+              <div
+                className="gallery-lightbox-frame"
+                onClick={(eventClick) => eventClick.stopPropagation()}
+                onTouchEnd={(eventTouch) => {
+                  if (lightboxTouchStart === null) {
+                    return;
+                  }
+
+                  const endX = eventTouch.changedTouches[0]?.clientX ?? lightboxTouchStart;
+                  const delta = endX - lightboxTouchStart;
+
+                  if (Math.abs(delta) > 40) {
+                    setSelectedPhotoIndex((current) => {
+                      if (current === null) {
+                        return current;
+                      }
+                      return delta < 0
+                        ? (current + 1) % gallery.length
+                        : (current - 1 + gallery.length) % gallery.length;
+                    });
+                  }
+
+                  setLightboxTouchStart(null);
+                }}
+                onTouchStart={(eventTouch) => setLightboxTouchStart(eventTouch.touches[0]?.clientX ?? null)}
+              >
+                <button
+                  className="gallery-lightbox-close"
+                  onClick={() => setSelectedPhotoIndex(null)}
+                  type="button"
+                >
+                  Close
+                </button>
+                {gallery.length > 1 ? (
+                  <>
+                    <button
+                      className="gallery-lightbox-nav gallery-lightbox-nav-prev"
+                      onClick={() =>
+                        setSelectedPhotoIndex((current) =>
+                          current === null ? current : (current - 1 + gallery.length) % gallery.length,
+                        )
+                      }
+                      type="button"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      className="gallery-lightbox-nav gallery-lightbox-nav-next"
+                      onClick={() =>
+                        setSelectedPhotoIndex((current) =>
+                          current === null ? current : (current + 1) % gallery.length,
+                        )
+                      }
+                      type="button"
+                    >
+                      Next
+                    </button>
+                  </>
+                ) : null}
                 {selectedPhoto.imageUrl ? (
                   <Image
                     alt={selectedPhoto.title}
@@ -1433,6 +1541,9 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
                 <div className="gallery-lightbox-copy">
                   <h3>{selectedPhoto.title}</h3>
                   <p>{selectedPhoto.subtitle}</p>
+                  <span className="gallery-lightbox-counter">
+                    {(selectedPhotoIndex || 0) + 1} / {gallery.length}
+                  </span>
                 </div>
               </div>
             </button>
