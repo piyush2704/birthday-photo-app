@@ -6,7 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { demoEvent, demoGallery, demoProfile, demoQueue } from "../lib/mockData";
-import { functionsBaseUrl, getSupabaseClient, hasSupabaseClientEnv } from "../lib/supabaseClient";
+import {
+  functionsBaseUrl,
+  getSupabaseClient,
+  hasSupabaseClientEnv,
+} from "../lib/supabaseClient";
 import type {
   CreateEventResponse,
   EventMemberRecord,
@@ -447,6 +451,26 @@ export function BirthdayApp() {
       mounted = false;
       subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const nextEventCode = params.get("event");
+    const nextPin = params.get("pin");
+
+    if (!nextEventCode && !nextPin) {
+      return;
+    }
+
+    setUploadForm((current) => ({
+      ...current,
+      eventCode: nextEventCode ? nextEventCode.toUpperCase() : current.eventCode,
+      pin: nextPin ?? current.pin,
+    }));
   }, []);
 
   useEffect(() => {
