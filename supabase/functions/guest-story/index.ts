@@ -1,7 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
 
-type GuestGalleryRequest = {
+type GuestStoryRequest = {
   event_code: string
   pin: string
 }
@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const body = (await req.json()) as GuestGalleryRequest
+    const body = (await req.json()) as GuestStoryRequest
     const eventCode = body?.event_code?.trim()
     const pin = body?.pin?.trim()
 
@@ -74,19 +74,43 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { data: photos, error: photoError } = await supabase
+    const [{ data: settings, error: settingsError }, { data: sections, error: sectionsError }] =
+      await Promise.all([
+        supabase
+          .from("event_story_settings")
+          .select("event_id, grouping, section_count, cover_title, cover_subtitle, updated_at")
+          .eq("event_id", event.id)
+          .maybeSingle(),
+        supabase
+          .from("event_story_sections")
+          .select("id, label, title, subtitle, story_text, sort_order, visible")
+          .eq("event_id", event.id)
+          .eq("visible", true)
+          .order("sort_order", { ascending: true }),
+      ])
+
+    if (settingsError || sectionsError) {
+      return new Response(
+        JSON.stringify({ error: "Failed to load storybook" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      )
+    }
+
+    const sectionIds = (sections || []).map((section) => section.id)
+
+    const { data: photos, error: photosError } = await supabase
       .from("photos")
-      .select("id, uploader_display_name, caption, storage_path, created_at, captured_at, is_visible")
+      .select("id, caption, storage_path, created_at, captured_at, timeline_section_id, timeline_sort_order, is_visible, status")
       .eq("event_id", event.id)
       .eq("status", "approved")
       .eq("is_visible", true)
-      .order("captured_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(96)
+      .in("timeline_section_id", sectionIds.length > 0 ? sectionIds : ["00000000-0000-0000-0000-000000000000"])
+      .order("timeline_sort_order", { ascending: true })
+      .order("captured_at", { ascending: true, nullsFirst: false })
 
-    if (photoError) {
+    if (photosError) {
       return new Response(
-        JSON.stringify({ error: "Failed to load gallery" }),
+        JSON.stringify({ error: "Failed to load story photos" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       )
     }
@@ -99,28 +123,42 @@ Deno.serve(async (req) => {
 
     if (signedUrls.error) {
       return new Response(
-        JSON.stringify({ error: "Failed to prepare gallery image URLs" }),
+        JSON.stringify({ error: "Failed to prepare story image URLs" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       )
     }
 
     const urlMap = new Map((signedUrls.data || []).map((entry) => [entry.path, entry.signedUrl]))
 
+    const photoGroups = new Map<string, Array<Record<string, unknown>>>()
+    for (const photo of photos || []) {
+      const key = photo.timeline_section_id as string | null
+      if (!key) continue
+      if (!photoGroups.has(key)) {
+        photoGroups.set(key, [])
+      }
+      photoGroups.get(key)?.push(photo as unknown as Record<string, unknown>)
+    }
+
     return new Response(
       JSON.stringify({
         event,
-        photos: (photos || []).map((photo) => ({
-          id: photo.id,
-          title: photo.caption || "Party photo",
-          subtitle: `Captured ${new Date(photo.captured_at ?? photo.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
-          status: "approved",
-          image_url: urlMap.get(photo.storage_path) ?? null,
-          captured_at: photo.captured_at ?? photo.created_at,
+        settings,
+        sections: (sections || []).map((section) => ({
+          ...section,
+          photos: (photoGroups.get(section.id) || []).map((photo) => ({
+            id: photo.id,
+            title: photo.caption || section.title,
+            subtitle: section.subtitle || "",
+            status: "approved",
+            image_url: urlMap.get(photo.storage_path as string) ?? null,
+            captured_at: (photo.captured_at as string | null) ?? (photo.created_at as string),
+          })),
         })),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     )
-  } catch (_err) {
+  } catch (_error) {
     return new Response(
       JSON.stringify({ error: "Unexpected error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },

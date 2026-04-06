@@ -412,6 +412,12 @@ verify_jwt = false
 import_map = "./functions/guest-gallery/deno.json"
 entrypoint = "./functions/guest-gallery/index.ts"
 
+[functions.guest-story]
+enabled = true
+verify_jwt = false
+import_map = "./functions/guest-story/deno.json"
+entrypoint = "./functions/guest-story/index.ts"
+
 [functions.moderator-gallery]
 enabled = true
 verify_jwt = false

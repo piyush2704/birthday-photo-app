@@ -1,6 +1,6 @@
 import { BirthdayApp } from "../../components/birthday-app";
 
-export default function AdminPage({
+export default function TimelinePage({
   searchParams,
 }: {
   searchParams?: { event?: string; pin?: string };

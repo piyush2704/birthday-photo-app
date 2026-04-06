@@ -21,6 +21,7 @@ export const demoGallery: PhotoCard[] = [
     subtitle: "Uploaded by Maya at 2:15 PM",
     status: "approved",
     imageUrl: null,
+    capturedAt: "2026-04-03T14:15:00.000Z",
   },
   {
     id: "2",
@@ -28,6 +29,7 @@ export const demoGallery: PhotoCard[] = [
     subtitle: "Uploaded by Daniel at 2:32 PM",
     status: "approved",
     imageUrl: null,
+    capturedAt: "2026-04-03T14:32:00.000Z",
   },
   {
     id: "3",
@@ -35,6 +37,7 @@ export const demoGallery: PhotoCard[] = [
     subtitle: "Uploaded by Priya at 3:05 PM",
     status: "approved",
     imageUrl: null,
+    capturedAt: "2026-04-03T15:05:00.000Z",
   },
 ];
 
@@ -45,6 +48,7 @@ export const demoQueue: PhotoCard[] = [
     subtitle: "Awaiting moderation",
     status: "pending",
     imageUrl: null,
+    capturedAt: "2026-04-03T15:20:00.000Z",
   },
   {
     id: "q2",
@@ -52,5 +56,6 @@ export const demoQueue: PhotoCard[] = [
     subtitle: "Awaiting moderation",
     status: "pending",
     imageUrl: null,
+    capturedAt: "2026-04-03T15:45:00.000Z",
   },
 ];

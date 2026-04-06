@@ -32,6 +32,11 @@ export type PhotoRecord = {
   storage_path: string;
   caption: string | null;
   status: PhotoStatus;
+  is_visible: boolean;
+  captured_at: string | null;
+  capture_source: "exif" | "upload";
+  timeline_section_id: string | null;
+  timeline_sort_order: number;
   created_at: string;
 };
 
@@ -41,6 +46,36 @@ export type PhotoCard = {
   subtitle: string;
   status: PhotoStatus;
   imageUrl: string | null;
+  capturedAt: string;
+  visible?: boolean;
+  timelineSectionId?: string | null;
+  timelineSortOrder?: number;
+};
+
+export type StorySettingsRecord = {
+  event_id: string;
+  grouping: "month" | "year";
+  section_count: number;
+  cover_title: string;
+  cover_subtitle: string;
+  updated_at: string;
+};
+
+export type StorySectionRecord = {
+  id: string;
+  event_id: string;
+  label: string;
+  title: string;
+  subtitle: string | null;
+  story_text: string | null;
+  sort_order: number;
+  visible: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type StorySectionCard = StorySectionRecord & {
+  photos: PhotoCard[];
 };
 
 export type JoinEventRequest = {
@@ -66,8 +101,8 @@ export type CreateEventResponse = {
 export type GuestUploadRequest = {
   event_code: string;
   pin: string;
-  uploader_display_name?: string;
   file_ext: string;
+  captured_at?: string;
 };
 
 export type GuestUploadResponse = {
@@ -89,11 +124,22 @@ export type GuestGalleryPhoto = {
   subtitle: string;
   status: Extract<PhotoStatus, "approved">;
   image_url: string | null;
+  captured_at: string;
 };
 
 export type GuestGalleryResponse = {
   event: EventRecord;
   photos: GuestGalleryPhoto[];
+};
+
+export type GuestStoryResponse = {
+  event: EventRecord;
+  settings: StorySettingsRecord | null;
+  sections: Array<
+    Omit<StorySectionRecord, "event_id" | "created_at" | "updated_at"> & {
+      photos: GuestGalleryPhoto[];
+    }
+  >;
 };
 
 export type ModeratorGalleryRequest = {

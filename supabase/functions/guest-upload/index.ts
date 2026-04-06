@@ -5,8 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
 type GuestUploadRequest = {
   event_code: string
   pin: string
-  uploader_display_name?: string
   file_ext: string
+  captured_at?: string
 }
 
 type GuestUploadResponse = {
@@ -42,7 +42,10 @@ Deno.serve(async (req) => {
     const eventCode = body?.event_code?.trim()
     const pin = body?.pin?.trim()
     const fileExt = body?.file_ext?.trim().toLowerCase()
-    const uploaderDisplayName = body?.uploader_display_name?.trim() || null
+    const capturedAt =
+      typeof body?.captured_at === "string" && body.captured_at.trim().length > 0
+        ? body.captured_at.trim()
+        : null
 
     if (!eventCode || !pin || !fileExt) {
       return new Response(
@@ -102,9 +105,11 @@ Deno.serve(async (req) => {
     const { error: insertError } = await supabase.from("photos").insert({
       id: photoId,
       event_id: event.id,
-      uploader_display_name: uploaderDisplayName,
       storage_path: storagePath,
       status,
+      captured_at: capturedAt,
+      capture_source: capturedAt ? "exif" : "upload",
+      is_visible: true,
     })
 
     if (insertError) {
