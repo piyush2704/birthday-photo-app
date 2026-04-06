@@ -99,8 +99,48 @@ const screenMap = new Map<string, ScreenKey>([
 
 const storedEventIdKey = "birthday-photo-app.event-id";
 
+const chapterColors = [
+  "#F3EFE8",
+  "#EBF2F8",
+  "#EDF4EB",
+  "#F0EBF5",
+  "#EBF2F8",
+  "#F5F2EB",
+  "#EBF5F2",
+  "#F5EDEF",
+  "#EBF0F8",
+  "#F5F0EB",
+  "#ECF2F5",
+  "#F5F2EF",
+];
+
+const chapterEmojis = ["🌙", "✨", "🦋", "🎭", "🌿", "🎉", "🗺️", "🏔️", "💬", "👣", "🌿", "🎂"];
+
+const chapterMilestones = [
+  "Hello, World!",
+  "First Social Smile",
+  "Lifting That Little Head",
+  "First Belly Laugh",
+  "Sitting with Support",
+  "First Solids Adventure",
+  "First Crawl!",
+  "First Pull-to-Stand",
+  'First "Mama" & "Dada"',
+  "Walking into the Future",
+  "First Outdoor Expedition",
+  "Happy First Birthday, Vaayu!",
+];
+
 function getScreen(pathname: string): ScreenKey {
   return screenMap.get(pathname) || "legacy";
+}
+
+function getChapterTheme(index: number) {
+  return {
+    color: chapterColors[index % chapterColors.length],
+    emoji: chapterEmojis[index % chapterEmojis.length],
+    milestone: chapterMilestones[index % chapterMilestones.length],
+  };
 }
 
 async function createSignedViewUrls(paths: string[]) {
@@ -208,62 +248,213 @@ function StoryTimelinePage({
   sections: StorySectionCard[];
   onOpenGallery: () => void;
 }) {
+  const [activeChapterId, setActiveChapterId] = useState(sections[0]?.id || "");
+  const [lightboxState, setLightboxState] = useState<{
+    photos: PhotoCard[];
+    selectedIndex: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (sections.length === 0) return;
+    setActiveChapterId((current) => current || sections[0].id);
+  }, [sections]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+        if (visible[0]) {
+          setActiveChapterId(visible[0].target.id.replace("chapter-", ""));
+        }
+      },
+      { threshold: 0.32 },
+    );
+
+    sections.forEach((section) => {
+      const element = document.getElementById(`chapter-${section.id}`);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [sections]);
+
+  function openTimelineLightbox(photos: PhotoCard[], photoId: string) {
+    const selectedIndex = photos.findIndex((photo) => photo.id === photoId);
+    setLightboxState({
+      photos,
+      selectedIndex: selectedIndex >= 0 ? selectedIndex : 0,
+    });
+  }
+
   return (
-    <section className="storybook-section">
-      <div className="story-cover">
-        <div className="story-cover-copy">
-          <p className="storybook-overline">Story Timeline</p>
-          <h1>{settings?.cover_title || `${event?.title || "Vaayu"} Story Timeline`}</h1>
-          <p className="storybook-copy">
-            {settings?.cover_subtitle ||
-              "A premium scrapbook of milestones, little details, and birthday memories from Vaayu's first year."}
+    <>
+      <section className="timeline-cover-section">
+        <div className="timeline-cover-decor" aria-hidden="true">
+          <span className="timeline-moon" />
+          <span className="timeline-star timeline-star-a" />
+          <span className="timeline-star timeline-star-b" />
+          <span className="timeline-cloud timeline-cloud-a" />
+          <span className="timeline-cloud timeline-cloud-b" />
+          <span className="timeline-spark timeline-spark-a" />
+          <span className="timeline-spark timeline-spark-b" />
+          <span className="timeline-balloon-soft timeline-balloon-soft-a" />
+          <span className="timeline-balloon-soft timeline-balloon-soft-b" />
+          <span className="timeline-orbit-ring" />
+        </div>
+
+        <div className="timeline-cover-inner">
+          <p className="timeline-script">A Storybook for</p>
+          <h1 className="timeline-cover-title">{event?.title || "Vaayu"}</h1>
+          <div className="timeline-flourish" aria-hidden="true" />
+          <p className="timeline-cover-kicker">His First Year</p>
+          <p className="timeline-cover-subtitle">
+            {settings?.cover_subtitle || "Twelve chapters. Infinite love."}
           </p>
-          <button className="storybook-button storybook-button-secondary" onClick={onOpenGallery} type="button">
-            Browse the Gallery
-          </button>
+          <div className="timeline-cover-actions">
+            <a className="timeline-cover-primary" href="#timeline">
+              Read the Story
+            </a>
+            <button className="timeline-cover-secondary" onClick={onOpenGallery} type="button">
+              View Gallery
+            </button>
+          </div>
+          <div className="timeline-scroll-indicator" aria-hidden="true">
+            <span>Scroll</span>
+            <i />
+          </div>
         </div>
-        <div className="story-cover-stack" aria-hidden="true">
-          <div className="stack-card stack-card-large" />
-          <div className="stack-card stack-card-tilt" />
-          <div className="floating-balloon balloon-one" />
-          <div className="floating-balloon balloon-two" />
-        </div>
+      </section>
+
+      <div className="timeline-side-nav" aria-label="Story chapters">
+        {sections.map((section) => {
+          const active = section.id === activeChapterId;
+          return (
+            <a className="timeline-side-link" href={`#chapter-${section.id}`} key={section.id}>
+              <span className={`timeline-side-dot ${active ? "timeline-side-dot-active" : ""}`} />
+              <span className={`timeline-side-label ${active ? "timeline-side-label-active" : ""}`}>
+                {section.label}
+              </span>
+            </a>
+          );
+        })}
       </div>
 
-      <div className="timeline-flow">
-        {sections.map((section, index) => (
-          <article className="timeline-chapter" key={section.id}>
-            <div className="timeline-marker">
-              <span>{String(index + 1).padStart(2, "0")}</span>
-            </div>
-            <div className="timeline-copy">
-              <p className="timeline-label">{section.label}</p>
-              <h2>{section.title}</h2>
-              {section.subtitle ? <p className="timeline-subtitle">{section.subtitle}</p> : null}
-              {section.story_text ? <p className="storybook-copy">{section.story_text}</p> : null}
-            </div>
-            <div className="timeline-media">
-              {section.photos.length > 0 ? (
-                <div className="timeline-photo-stack">
-                  {section.photos.slice(0, 3).map((photo, photoIndex) => (
-                    <figure
-                      className={`timeline-photo-card timeline-photo-card-${photoIndex}`}
-                      key={photo.id}
+      <section className="timeline-sections" id="timeline">
+        {sections.map((section, index) => {
+          const reverse = index % 2 === 1;
+          const theme = getChapterTheme(index);
+          const featuredPhoto = section.photos[0] || null;
+          const extraPhotos = section.photos.slice(1, 3);
+
+          return (
+            <article
+              className={`timeline-editorial-section ${reverse ? "timeline-editorial-section-reverse" : ""}`}
+              id={`chapter-${section.id}`}
+              key={section.id}
+              style={{ background: theme.color }}
+            >
+              <div className="timeline-editorial-decor" aria-hidden="true">
+                <span className="timeline-editorial-star" />
+                <span className="timeline-editorial-heart" />
+                <span className="timeline-editorial-cloud" />
+              </div>
+
+              <div className="timeline-editorial-shell">
+                <div className="timeline-editorial-media">
+                  {featuredPhoto?.imageUrl ? (
+                    <button
+                      className="timeline-editorial-photo"
+                      onClick={() => openTimelineLightbox(section.photos, featuredPhoto.id)}
+                      type="button"
                     >
-                      {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
-                    </figure>
-                  ))}
+                      <div className="timeline-editorial-photo-frame">
+                        <img alt={featuredPhoto.title} src={featuredPhoto.imageUrl} />
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="timeline-editorial-placeholder">
+                      <span className="timeline-editorial-placeholder-emoji">{theme.emoji}</span>
+                      <p>Photos coming soon</p>
+                    </div>
+                  )}
+
+                  {extraPhotos.length > 0 ? (
+                    <div className="timeline-editorial-extra">
+                      {extraPhotos.map((photo, photoIndex) => (
+                        <button
+                          className={`timeline-editorial-extra-photo timeline-editorial-extra-photo-${photoIndex}`}
+                          key={photo.id}
+                          onClick={() => openTimelineLightbox(section.photos, photo.id)}
+                          type="button"
+                        >
+                          <img alt={photo.title} src={photo.imageUrl || ""} />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : (
-                <div className="timeline-placeholder">
-                  <span>Curate photos for this chapter in Admin.</span>
+
+                <div className="timeline-editorial-copy">
+                  <span className="timeline-editorial-ghost">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <p className="timeline-editorial-label">{section.label}</p>
+                  <div className="timeline-flourish timeline-flourish-left" aria-hidden="true" />
+                  <h2>{section.title}</h2>
+                  {section.subtitle ? <p className="timeline-editorial-subtitle">{section.subtitle}</p> : null}
+                  {section.story_text ? <p className="timeline-editorial-body">{section.story_text}</p> : null}
+                  <span className="timeline-milestone-pill">{theme.milestone}</span>
+                  <div className="timeline-editorial-footer">
+                    <span className="timeline-editorial-heart-mark">♥</span>
+                    <span>a memory to treasure forever</span>
+                  </div>
                 </div>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="timeline-closing-section">
+        <div className="timeline-closing-inner">
+          <span className="timeline-closing-moon" aria-hidden="true" />
+          <h2>And so the story continues…</h2>
+          <p>
+            One year of firsts, of laughter, of love beyond measure. But the best chapters are still being written,
+            one magical day at a time.
+          </p>
+          <div className="timeline-cover-actions">
+            <button className="timeline-cover-primary" onClick={onOpenGallery} type="button">
+              View the Gallery
+            </button>
+            <a className="timeline-cover-secondary" href="#timeline">
+              Read Again
+            </a>
+          </div>
+          <p className="timeline-closing-signoff">Made with love, for Vaayu ✦</p>
+        </div>
+      </section>
+
+      <Lightbox
+        onClose={() => setLightboxState(null)}
+        onMove={(direction) => {
+          setLightboxState((current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              selectedIndex:
+                (current.selectedIndex + direction + current.photos.length) % current.photos.length,
+            };
+          });
+        }}
+        photos={lightboxState?.photos || []}
+        selectedIndex={lightboxState?.selectedIndex ?? null}
+      />
+    </>
   );
 }
 
@@ -355,72 +546,124 @@ function GalleryPage({
   onOpenUpload: () => void;
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const groupedPhotos = useMemo(() => groupPhotosByMonth(photos), [photos]);
+  const monthGroups = useMemo(() => groupPhotosByMonth(photos), [photos]);
+  const [activeFilter, setActiveFilter] = useState("all");
+
+  const filteredPhotos = useMemo(() => {
+    if (activeFilter === "all") return photos;
+    return photos.filter((photo) => {
+      const date = new Date(photo.capturedAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      return key === activeFilter;
+    });
+  }, [activeFilter, photos]);
+
+  const filteredGroups = useMemo(() => {
+    if (activeFilter === "all") return monthGroups;
+    return monthGroups.filter((group) => group.key === activeFilter);
+  }, [activeFilter, monthGroups]);
 
   return (
-    <section className="storybook-section">
-      <div className="gallery-header">
-        <div>
-          <p className="storybook-overline">Birthday Memories</p>
-          <h1>{event?.title || "Vaayu's Birthday Gallery"}</h1>
-          <p className="storybook-copy">
-            Capture-month groupings keep the scrapbook feeling curated instead of list-like.
-          </p>
+    <>
+      <section className="gallery-page-shell">
+        <div className="gallery-page-backdrop" aria-hidden="true">
+          <span className="gallery-backdrop-star gallery-backdrop-star-a" />
+          <span className="gallery-backdrop-star gallery-backdrop-star-b" />
+          <span className="gallery-backdrop-moon" />
+          <span className="gallery-backdrop-cloud gallery-backdrop-cloud-a" />
+          <span className="gallery-backdrop-cloud gallery-backdrop-cloud-b" />
+          <span className="gallery-backdrop-spark" />
         </div>
-        <button className="storybook-button storybook-button-primary gallery-upload-button" onClick={onOpenUpload} type="button">
-          Upload
-        </button>
-      </div>
 
-      {groupedPhotos.length === 0 ? (
-        <article className="storybook-card empty-card">
-          <h2>No birthday photos yet</h2>
-          <p className="storybook-copy">
-            Once a memory is uploaded, it will appear here grouped by the month it was captured.
-          </p>
-        </article>
-      ) : (
-        groupedPhotos.map((group) => (
-          <section className="gallery-group" key={group.key}>
-            <div className="gallery-group-heading">
-              <span>{group.label}</span>
-            </div>
-            <div className="gallery-masonry">
-              {group.photos.map((photo, index) => (
+        <div className="gallery-page-inner">
+          <div className="gallery-page-hero">
+            <p className="gallery-page-script">Vaayu&apos;s</p>
+            <h1>Photo Gallery</h1>
+            <p className="gallery-page-meta">
+              {filteredPhotos.length} moments from {event?.title || "Vaayu"}&apos;s first year
+            </p>
+          </div>
+
+          {monthGroups.length > 0 ? (
+            <div className="gallery-filter-bar">
+              <button
+                className={`gallery-filter-chip ${activeFilter === "all" ? "gallery-filter-chip-active" : ""}`}
+                onClick={() => setActiveFilter("all")}
+                type="button"
+              >
+                All Photos
+              </button>
+              {monthGroups.map((group) => (
                 <button
-                  className={`gallery-card ${
-                    index % 6 === 4 ? "gallery-card-feature" : index % 3 === 0 ? "gallery-card-tall" : "gallery-card-square"
-                  }`}
-                  key={photo.id}
-                  onClick={() => setSelectedIndex(photos.findIndex((item) => item.id === photo.id))}
+                  className={`gallery-filter-chip ${activeFilter === group.key ? "gallery-filter-chip-active" : ""}`}
+                  key={group.key}
+                  onClick={() => setActiveFilter(group.key)}
                   type="button"
                 >
-                  <div className="gallery-card-media">
-                    {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
-                  </div>
-                  <div className="gallery-card-meta">
-                    <strong>{photo.title}</strong>
-                    <span>{photo.subtitle}</span>
-                  </div>
+                  {group.label}
                 </button>
               ))}
             </div>
-          </section>
-        ))
-      )}
+          ) : null}
+
+          {filteredPhotos.length === 0 ? (
+            <article className="storybook-card empty-card">
+              <h2>No photos yet for this month</h2>
+              <p className="storybook-copy">Once a memory is uploaded, it will appear in Vaayu&apos;s gallery here.</p>
+            </article>
+          ) : (
+            filteredGroups.map((group) => (
+              <section className="gallery-month-block" key={group.key}>
+                {activeFilter === "all" ? (
+                  <div className="gallery-month-divider">
+                    <span />
+                    <p>{group.label}</p>
+                    <span />
+                  </div>
+                ) : null}
+
+                <div className="gallery-package-grid">
+                  {group.photos.map((photo) => (
+                    <button
+                      className="gallery-package-card"
+                      key={photo.id}
+                      onClick={() => setSelectedIndex(filteredPhotos.findIndex((item) => item.id === photo.id))}
+                      type="button"
+                    >
+                      <div className="gallery-package-card-media">
+                        {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                      </div>
+                      <div className="gallery-package-card-overlay">
+                        <span>{group.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))
+          )}
+
+          <div className="gallery-bottom-cta">
+            <p>Have photos to share?</p>
+            <button className="timeline-cover-primary" onClick={onOpenUpload} type="button">
+              Upload Photos
+            </button>
+          </div>
+        </div>
+      </section>
 
       <Lightbox
         onClose={() => setSelectedIndex(null)}
         onMove={(direction) => {
           setSelectedIndex((current) => {
             if (current === null) return current;
-            return (current + direction + photos.length) % photos.length;
+            return (current + direction + filteredPhotos.length) % filteredPhotos.length;
           });
         }}
-        photos={photos}
+        photos={filteredPhotos}
         selectedIndex={selectedIndex}
       />
-    </section>
+    </>
   );
 }
 
@@ -447,74 +690,102 @@ function UploadPage({
   onRemovePreview: (id: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const isReady = previews.length > 0;
+
   return (
-    <section className="storybook-section">
-      <article className="upload-hero">
-        <div>
-          <p className="storybook-overline">Upload Page</p>
-          <h1>Add photos to Vaayu&apos;s scrapbook</h1>
-          <p className="storybook-copy">
-            Upload only. No guest name, no caption field, no extra friction.
-          </p>
-        </div>
-      </article>
+    <section className="upload-page-shell">
+      <div className="upload-page-backdrop" aria-hidden="true">
+        <span className="gallery-backdrop-star gallery-backdrop-star-a" />
+        <span className="gallery-backdrop-moon" />
+        <span className="gallery-backdrop-cloud gallery-backdrop-cloud-a" />
+        <span className="gallery-backdrop-cloud gallery-backdrop-cloud-b" />
+        <span className="gallery-backdrop-spark" />
+      </div>
 
-      <form className="storybook-card upload-card" onSubmit={onSubmit}>
-        <div className="upload-grid">
-          <label className="storybook-field">
-            <span>Event code</span>
-            <input
-              autoCapitalize="characters"
-              placeholder="VAAYU"
-              value={eventCode}
-              onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())}
-            />
-          </label>
-          <label className="storybook-field">
-            <span>PIN</span>
-            <input
-              inputMode="numeric"
-              placeholder="••••"
-              value={pin}
-              onChange={(event) => onPinChange(event.target.value)}
-            />
-          </label>
-        </div>
-
-        <label className="upload-dropzone">
-          <input accept="image/*" multiple onChange={onFilesSelected} type="file" />
-          <span>Drop photos here or choose from your phone</span>
-          <small>We extract capture dates where possible and fall back to upload time.</small>
-        </label>
-
-        {previews.length > 0 ? (
-          <div className="upload-preview-grid">
-            {previews.map((preview) => (
-              <article className="upload-preview-card" key={preview.id}>
-                <img alt={preview.file.name} src={preview.url} />
-                <div>
-                  <strong>{preview.file.name}</strong>
-                  <span>{formatMonthYear(preview.capturedAt)}</span>
-                </div>
-                <button
-                  className="upload-preview-remove"
-                  onClick={() => onRemovePreview(preview.id)}
-                  type="button"
-                >
-                  Remove
-                </button>
-              </article>
-            ))}
+      <div className="upload-page-inner">
+        <div className="upload-package-hero">
+          <div className="upload-package-icon" aria-hidden="true">
+            <span />
           </div>
-        ) : null}
-
-        <div className="upload-footer">
-          <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
-          <button className="storybook-button storybook-button-primary" disabled={busy || previews.length === 0} type="submit">
-            {busy ? "Uploading..." : `Upload ${previews.length > 1 ? `${previews.length} photos` : "photo"}`}
-          </button>
+          <h1>Share a Photo</h1>
+          <p>Add to Vaayu&apos;s memory collection. We&apos;ll detect the month automatically.</p>
         </div>
-      </form>
+
+        <form className="upload-package-card" onSubmit={onSubmit}>
+          <div className="upload-package-fields">
+            <label className="storybook-field">
+              <span>Event code</span>
+              <input
+                autoCapitalize="characters"
+                placeholder="VAAYU"
+                value={eventCode}
+                onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())}
+              />
+            </label>
+            <label className="storybook-field">
+              <span>PIN</span>
+              <input
+                inputMode="numeric"
+                placeholder="••••"
+                value={pin}
+                onChange={(event) => onPinChange(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <label className="upload-package-dropzone">
+            <input accept="image/*" multiple onChange={onFilesSelected} type="file" />
+            <div className="upload-package-dropzone-icon">+</div>
+            <p>
+              <strong>Click to upload</strong> or drag &amp; drop
+            </p>
+            <small>JPG, PNG - capture date detected automatically</small>
+          </label>
+
+          {isReady ? (
+            <div className="upload-package-preview-stack">
+              <div className="upload-package-preview-grid">
+                {previews.map((preview) => (
+                  <article className="upload-package-preview" key={preview.id}>
+                    <div className="upload-package-preview-frame">
+                      <img alt={preview.file.name} src={preview.url} />
+                    </div>
+                    <div className="upload-package-preview-tag">
+                      {formatMonthYear(preview.capturedAt)}
+                    </div>
+                    <button
+                      className="upload-package-preview-remove"
+                      onClick={() => onRemovePreview(preview.id)}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </article>
+                ))}
+              </div>
+
+              <div className="upload-package-summary">
+                ✦ {previews.length} photo{previews.length !== 1 ? "s" : ""} ready to upload - capture dates detected from photo metadata
+              </div>
+            </div>
+          ) : null}
+
+          <button className="upload-package-submit" disabled={busy || !isReady} type="submit">
+            {busy ? "Submitting..." : `Submit ${previews.length || ""} Photo${previews.length === 1 ? "" : previews.length > 1 ? "s" : ""}`}
+          </button>
+
+          <div className="upload-package-info">
+            <p className="upload-package-info-title">A few things to know</p>
+            <ul>
+              <li>Your photos are grouped by the date they were taken</li>
+              <li>They appear in Vaayu&apos;s album as soon as the upload completes</li>
+              <li>You can upload multiple photos at once</li>
+              <li>Clear, well-lit photos look most beautiful in the gallery</li>
+            </ul>
+            <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
+          </div>
+        </form>
+      </div>
     </section>
   );
 }
@@ -917,6 +1188,7 @@ function ModeratorPage({
   onUploadToSection: (sectionId: string) => void;
   onDelete: (photoId: string) => void;
 }) {
+  const [activeTab, setActiveTab] = useState<"overview" | "photos" | "chapters" | "settings">("overview");
   const photosBySection = useMemo(
     () =>
       sections.map((section) => ({
@@ -927,6 +1199,10 @@ function ModeratorPage({
       })),
     [photos, sections],
   );
+  const visibleSections = sections.filter((section) => section.visible).length;
+  const approvedPhotos = photos.filter((photo) => photo.status === "approved").length;
+  const hiddenPhotos = photos.filter((photo) => !photo.isVisible).length;
+  const pendingPhotos = photos.filter((photo) => photo.status === "pending").length;
 
   return (
     <section className="storybook-section">
@@ -954,78 +1230,170 @@ function ModeratorPage({
 
       {event && settings ? (
         <>
-          <section className="admin-layout moderator-layout">
-            <article className="storybook-card settings-card">
-              <h2>{event.title}</h2>
-              <p className="storybook-copy">
-                Build 12 monthly chapters from Vaayu&apos;s birth date and keep the timeline polished with printed-photo thumbnails.
-              </p>
-              <div className="settings-grid">
-                <label className="storybook-field">
-                  <span>Birth date</span>
-                  <input
-                    type="date"
-                    value={settings.birth_date || getDefaultBirthDate(event.public_code) || ""}
-                    onChange={(eventField) => onSettingsChange({ birth_date: eventField.target.value || null })}
-                  />
-                </label>
-                <label className="storybook-field">
-                  <span>Grouping</span>
-                  <select
-                    value={settings.grouping}
-                    onChange={(eventField) =>
-                      onSettingsChange({ grouping: eventField.target.value as "month" | "year" })
-                    }
-                  >
-                    <option value="month">Month</option>
-                    <option value="year">Year</option>
-                  </select>
-                </label>
-                <label className="storybook-field">
-                  <span>Section count</span>
-                  <input
-                    max={24}
-                    min={1}
-                    type="number"
-                    value={settings.section_count}
-                    onChange={(eventField) =>
-                      onSettingsChange({ section_count: Number(eventField.target.value) || 12 })
-                    }
-                  />
-                </label>
-                <label className="storybook-field">
-                  <span>Cover title</span>
-                  <input
-                    value={settings.cover_title}
-                    onChange={(eventField) => onSettingsChange({ cover_title: eventField.target.value })}
-                  />
-                </label>
-                <label className="storybook-field">
-                  <span>Cover subtitle</span>
-                  <input
-                    value={settings.cover_subtitle}
-                    onChange={(eventField) => onSettingsChange({ cover_subtitle: eventField.target.value })}
-                  />
-                </label>
+          <div className="moderator-dashboard-shell">
+            <div className="moderator-dashboard-header">
+              <div className="moderator-dashboard-brand">
+                <div className="moderator-dashboard-mark" aria-hidden="true">
+                  <span />
+                </div>
+                <div>
+                  <h2>Moderator Dashboard</h2>
+                  <p>Manage Vaayu&apos;s storybook</p>
+                </div>
               </div>
-              <button
-                className="storybook-button storybook-button-secondary"
-                disabled={settingsBusy}
-                onClick={onSyncSections}
-                type="button"
-              >
-                {settingsBusy ? "Syncing..." : "Sync 12 monthly chapters"}
-              </button>
-            </article>
+              <div className="moderator-dashboard-star" aria-hidden="true">✦</div>
+            </div>
 
-            <article className="storybook-card sections-card moderator-sections-card">
-              <h2>Timeline chapters</h2>
-              <div className="admin-section-list moderator-section-list">
+            <div className="moderator-tabs">
+              {[
+                { key: "overview", label: "Overview" },
+                { key: "photos", label: "Photos" },
+                { key: "chapters", label: "Chapters" },
+                { key: "settings", label: "Settings" },
+              ].map((tab) => (
+                <button
+                  className={`moderator-tab ${activeTab === tab.key ? "moderator-tab-active" : ""}`}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key as "overview" | "photos" | "chapters" | "settings")}
+                  type="button"
+                >
+                  {tab.label}
+                  {tab.key === "photos" && pendingPhotos > 0 ? (
+                    <span className="moderator-tab-badge">{pendingPhotos}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === "overview" ? (
+              <div className="moderator-overview-grid">
+                {[
+                  { label: "Visible Chapters", value: `${visibleSections}/${sections.length}` },
+                  { label: "Total Photos", value: String(photos.length) },
+                  { label: "Pending Review", value: String(pendingPhotos) },
+                  { label: "Approved", value: String(approvedPhotos) },
+                ].map((stat) => (
+                  <article className="moderator-stat-card" key={stat.label}>
+                    <p className="moderator-stat-value">{stat.value}</p>
+                    <p className="moderator-stat-label">{stat.label}</p>
+                  </article>
+                ))}
+
+                <article className="moderator-summary-card">
+                  <h3>Story Details</h3>
+                  <div className="moderator-summary-grid">
+                    <div>
+                      <span>Baby</span>
+                      <strong>{event.title}</strong>
+                    </div>
+                    <div>
+                      <span>Tagline</span>
+                      <strong>{settings.cover_subtitle}</strong>
+                    </div>
+                    <div>
+                      <span>Timeline</span>
+                      <strong>{settings.grouping === "month" ? "Monthly" : "Yearly"}</strong>
+                    </div>
+                    <div>
+                      <span>Birth Date</span>
+                      <strong>{settings.birth_date || getDefaultBirthDate(event.public_code) || "Not set"}</strong>
+                    </div>
+                  </div>
+                </article>
+
+                <article className="moderator-summary-card">
+                  <h3>Photo Status</h3>
+                  <div className="moderator-status-list">
+                    <div className="moderator-status-pill">
+                      <span>Pending Review</span>
+                      <strong>{pendingPhotos}</strong>
+                    </div>
+                    <div className="moderator-status-pill">
+                      <span>Approved</span>
+                      <strong>{approvedPhotos}</strong>
+                    </div>
+                    <div className="moderator-status-pill">
+                      <span>Hidden Photos</span>
+                      <strong>{hiddenPhotos}</strong>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            ) : null}
+
+            {activeTab === "photos" ? (
+              <div className="admin-photo-grid moderator-photo-grid">
+                {photos.map((photo) => (
+                  <article className="admin-photo-card moderator-photo-card" key={photo.id}>
+                    <div className="admin-photo-frame">
+                      {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                      {!photo.isVisible ? <div className="moderator-photo-hidden">Hidden</div> : null}
+                      {photo.status === "pending" ? <div className="moderator-photo-pending">Pending</div> : null}
+                    </div>
+                    <div className="admin-photo-meta">
+                      <strong>{formatMonthYear(photo.capturedAt)}</strong>
+                      <span>{photo.title}</span>
+                    </div>
+                    <div className="admin-photo-controls">
+                      <label className="storybook-field">
+                        <span>Visibility</span>
+                        <select
+                          value={String(photo.isVisible)}
+                          onChange={(eventField) =>
+                            onPhotoChange(photo.id, { is_visible: eventField.target.value === "true" })
+                          }
+                        >
+                          <option value="true">Visible</option>
+                          <option value="false">Hidden</option>
+                        </select>
+                      </label>
+                      <label className="storybook-field">
+                        <span>Timeline chapter</span>
+                        <select
+                          value={photo.timelineSectionId || ""}
+                          onChange={(eventField) =>
+                            onPhotoChange(photo.id, { timeline_section_id: eventField.target.value || null })
+                          }
+                        >
+                          <option value="">Gallery only</option>
+                          {sections.map((section) => (
+                            <option key={section.id} value={section.id}>
+                              {section.label} · {section.title}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="storybook-field">
+                        <span>Featured order</span>
+                        <input
+                          min={0}
+                          type="number"
+                          value={photo.timelineSortOrder}
+                          onChange={(eventField) =>
+                            onPhotoChange(photo.id, { timeline_sort_order: Number(eventField.target.value) || 0 })
+                          }
+                        />
+                      </label>
+                      <button
+                        className="storybook-button storybook-button-danger"
+                        disabled={deleteBusyId === photo.id}
+                        onClick={() => onDelete(photo.id)}
+                        type="button"
+                      >
+                        {deleteBusyId === photo.id ? "Deleting..." : "Delete photo"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+
+            {activeTab === "chapters" ? (
+              <div className="moderator-chapter-stack">
                 {sections.map((section) => (
                   <article className="admin-section-card moderator-section-card" key={section.id}>
-                    <div className="admin-section-toolbar">
-                      <strong>{section.label}</strong>
-                      <div>
+                    <div className="moderator-chapter-head">
+                      <div className="moderator-chapter-reorder">
                         <button onClick={() => onSectionReorder(section.id, -1)} type="button">
                           ↑
                         </button>
@@ -1033,7 +1401,19 @@ function ModeratorPage({
                           ↓
                         </button>
                       </div>
+                      <span className="moderator-chapter-emoji">{chapterEmojis[(section.sort_order - 1 + chapterEmojis.length) % chapterEmojis.length]}</span>
+                      <div className="moderator-chapter-title">
+                        <p>{section.label}</p>
+                        <strong>{section.title}</strong>
+                        {section.subtitle ? <span>{section.subtitle}</span> : null}
+                      </div>
+                      <div className="moderator-chapter-actions">
+                        <button onClick={() => onSectionChange(section.id, { visible: !section.visible })} type="button">
+                          {section.visible ? "Hide" : "Show"}
+                        </button>
+                      </div>
                     </div>
+
                     <div className="settings-grid">
                       <label className="storybook-field">
                         <span>Label</span>
@@ -1056,23 +1436,12 @@ function ModeratorPage({
                           onChange={(eventField) => onSectionChange(section.id, { subtitle: eventField.target.value })}
                         />
                       </label>
-                      <label className="storybook-field">
-                        <span>Visible</span>
-                        <select
-                          value={String(section.visible)}
-                          onChange={(eventField) =>
-                            onSectionChange(section.id, { visible: eventField.target.value === "true" })
-                          }
-                        >
-                          <option value="true">Visible</option>
-                          <option value="false">Hidden</option>
-                        </select>
-                      </label>
                     </div>
+
                     <label className="storybook-field">
                       <span>Story text</span>
                       <textarea
-                        rows={4}
+                        rows={3}
                         value={section.story_text || ""}
                         onChange={(eventField) => onSectionChange(section.id, { story_text: eventField.target.value })}
                       />
@@ -1144,81 +1513,70 @@ function ModeratorPage({
                   </article>
                 ))}
               </div>
-            </article>
-          </section>
+            ) : null}
 
-          <article className="storybook-card photos-card">
-            <div className="photos-card-heading">
-              <div>
-                <h2>Photo visibility and assignment</h2>
-                <p className="storybook-copy">
-                  Show, hide, delete, and assign gallery uploads into the curated monthly timeline.
-                </p>
-              </div>
-            </div>
-            <div className="admin-photo-grid">
-              {photos.map((photo) => (
-                <article className="admin-photo-card" key={photo.id}>
-                  <div className="admin-photo-frame">
-                    {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
-                  </div>
-                  <div className="admin-photo-meta">
-                    <strong>{formatMonthYear(photo.capturedAt)}</strong>
-                    <span>{photo.title}</span>
-                  </div>
-                  <div className="admin-photo-controls">
-                    <label className="storybook-field">
-                      <span>Visibility</span>
-                      <select
-                        value={String(photo.isVisible)}
-                        onChange={(eventField) =>
-                          onPhotoChange(photo.id, { is_visible: eventField.target.value === "true" })
-                        }
-                      >
-                        <option value="true">Visible</option>
-                        <option value="false">Hidden</option>
-                      </select>
-                    </label>
-                    <label className="storybook-field">
-                      <span>Timeline chapter</span>
-                      <select
-                        value={photo.timelineSectionId || ""}
-                        onChange={(eventField) =>
-                          onPhotoChange(photo.id, { timeline_section_id: eventField.target.value || null })
-                        }
-                      >
-                        <option value="">Gallery only</option>
-                        {sections.map((section) => (
-                          <option key={section.id} value={section.id}>
-                            {section.label} · {section.title}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="storybook-field">
-                      <span>Featured order</span>
-                      <input
-                        min={0}
-                        type="number"
-                        value={photo.timelineSortOrder}
-                        onChange={(eventField) =>
-                          onPhotoChange(photo.id, { timeline_sort_order: Number(eventField.target.value) || 0 })
-                        }
-                      />
-                    </label>
-                    <button
-                      className="storybook-button storybook-button-danger"
-                      disabled={deleteBusyId === photo.id}
-                      onClick={() => onDelete(photo.id)}
-                      type="button"
+            {activeTab === "settings" ? (
+              <article className="moderator-settings-panel">
+                <div className="settings-grid">
+                  <label className="storybook-field">
+                    <span>Birth date</span>
+                    <input
+                      type="date"
+                      value={settings.birth_date || getDefaultBirthDate(event.public_code) || ""}
+                      onChange={(eventField) => onSettingsChange({ birth_date: eventField.target.value || null })}
+                    />
+                  </label>
+                  <label className="storybook-field">
+                    <span>Grouping</span>
+                    <select
+                      value={settings.grouping}
+                      onChange={(eventField) =>
+                        onSettingsChange({ grouping: eventField.target.value as "month" | "year" })
+                      }
                     >
-                      {deleteBusyId === photo.id ? "Deleting..." : "Delete photo"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </article>
+                      <option value="month">Month</option>
+                      <option value="year">Year</option>
+                    </select>
+                  </label>
+                  <label className="storybook-field">
+                    <span>Section count</span>
+                    <input
+                      max={24}
+                      min={1}
+                      type="number"
+                      value={settings.section_count}
+                      onChange={(eventField) =>
+                        onSettingsChange({ section_count: Number(eventField.target.value) || 12 })
+                      }
+                    />
+                  </label>
+                  <label className="storybook-field">
+                    <span>Cover title</span>
+                    <input
+                      value={settings.cover_title}
+                      onChange={(eventField) => onSettingsChange({ cover_title: eventField.target.value })}
+                    />
+                  </label>
+                  <label className="storybook-field">
+                    <span>Cover subtitle</span>
+                    <input
+                      value={settings.cover_subtitle}
+                      onChange={(eventField) => onSettingsChange({ cover_subtitle: eventField.target.value })}
+                    />
+                  </label>
+                </div>
+
+                <button
+                  className="storybook-button storybook-button-secondary"
+                  disabled={settingsBusy}
+                  onClick={onSyncSections}
+                  type="button"
+                >
+                  {settingsBusy ? "Syncing..." : "Sync 12 monthly chapters"}
+                </button>
+              </article>
+            ) : null}
+          </div>
         </>
       ) : null}
     </section>
@@ -1246,20 +1604,12 @@ function StorybookShell({
 
   return (
     <main className="storybook-app-shell">
-      <div className="storybook-backdrop" aria-hidden="true">
-        <div className="backdrop-shape backdrop-shape-one" />
-        <div className="backdrop-shape backdrop-shape-two" />
-        <div className="backdrop-orbit" />
-        <div className="backdrop-spark backdrop-spark-one" />
-        <div className="backdrop-spark backdrop-spark-two" />
-      </div>
-
       <header className="storybook-header">
         <Link className="storybook-brand" href={guestHref("/")}>
-          <span className="storybook-brand-mark">V</span>
+          <span className="storybook-brand-mark" aria-hidden="true" />
           <span>
             <strong>Vaayu</strong>
-            <small>1 Year Around the Sun</small>
+            <small>His First Year</small>
           </span>
         </Link>
         <nav className="storybook-nav" aria-label="Primary">
@@ -1274,10 +1624,11 @@ function StorybookShell({
           ))}
           {adminVisible ? (
             <Link
-              className={`storybook-tab ${currentScreen === "admin" ? "storybook-tab-active" : ""}`}
+              className={`storybook-admin-link ${currentScreen === "admin" ? "storybook-admin-link-active" : ""}`}
               href="/admin"
+              title="Admin"
             >
-              Admin
+              ⚙
             </Link>
           ) : null}
         </nav>
