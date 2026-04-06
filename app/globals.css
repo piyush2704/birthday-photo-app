@@ -1332,6 +1332,11 @@ body {
   max-width: 640px;
 }
 
+.moderator-entry-note {
+  font-size: 0.88rem;
+  color: #8f735f;
+}
+
 .moderator-dashboard-header {
   display: flex;
   align-items: center;

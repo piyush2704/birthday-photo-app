@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ChangeEvent,
   FormEvent,
+  KeyboardEvent,
   ReactNode,
   useCallback,
   useEffect,
@@ -266,6 +267,16 @@ function buildGalleryPhotosFromModerator(data: ModeratorStoryResponse): PhotoCar
     }));
 }
 
+function normalizePin(value: string) {
+  return value.replace(/\D/g, "").slice(0, 4);
+}
+
+function preventEnterSubmit(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+  }
+}
+
 function AccessGate({
   eventCode,
   pin,
@@ -304,10 +315,15 @@ function AccessGate({
           <label className="storybook-field">
             <span>PIN</span>
             <input
+              autoComplete="off"
               inputMode="numeric"
+              maxLength={4}
+              pattern="[0-9]*"
               value={pin}
-              onChange={(event) => onPinChange(event.target.value)}
+              onChange={(event) => onPinChange(normalizePin(event.target.value))}
+              onKeyDown={preventEnterSubmit}
               placeholder="••••"
+              type="tel"
             />
           </label>
           <button className="storybook-button storybook-button-primary" type="submit">
@@ -807,10 +823,15 @@ function UploadPage({
             <label className="storybook-field">
               <span>PIN</span>
               <input
+                autoComplete="off"
                 inputMode="numeric"
+                maxLength={4}
+                pattern="[0-9]*"
                 placeholder="••••"
                 value={pin}
-                onChange={(event) => onPinChange(event.target.value)}
+                onChange={(event) => onPinChange(normalizePin(event.target.value))}
+                onKeyDown={preventEnterSubmit}
+                type="tel"
               />
             </label>
           </div>
@@ -1308,7 +1329,16 @@ function ModeratorPage({
           </label>
           <label className="storybook-field">
             <span>Moderator PIN</span>
-            <input value={moderatorPin} onChange={(event) => onPinChange(event.target.value)} />
+            <input
+              autoComplete="off"
+              inputMode="numeric"
+              maxLength={4}
+              pattern="[0-9]*"
+              type="tel"
+              value={moderatorPin}
+              onChange={(event) => onPinChange(normalizePin(event.target.value))}
+              onKeyDown={preventEnterSubmit}
+            />
           </label>
           <button className="storybook-button storybook-button-primary" disabled={busy} type="submit">
             {busy ? "Opening..." : "Open manager"}
@@ -1316,6 +1346,9 @@ function ModeratorPage({
         </form>
         <p className="storybook-copy moderator-entry-copy">
           Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
+        </p>
+        <p className="storybook-copy moderator-entry-copy moderator-entry-note">
+          Guest story, gallery, and upload use the guest PIN. The moderator PIN only works on this manager page.
         </p>
         <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
       </article>
