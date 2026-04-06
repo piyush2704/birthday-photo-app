@@ -226,6 +226,46 @@ function mapModeratorPhoto(photo: {
   };
 }
 
+function buildStorySectionsFromModerator(data: ModeratorStoryResponse): StorySectionCard[] {
+  return data.sections.map((section) => ({
+    id: section.id,
+    event_id: data.event.id,
+    label: section.label,
+    title: section.title,
+    subtitle: section.subtitle,
+    story_text: section.story_text,
+    sort_order: section.sort_order,
+    visible: section.visible,
+    created_at: data.event.created_at,
+    updated_at: data.event.created_at,
+    photos: section.photos
+      .filter((photo) => photo.is_visible !== false && photo.status === "approved")
+      .map((photo) => ({
+        id: photo.id,
+        title: photo.title,
+        subtitle: photo.subtitle,
+        status: "approved",
+        imageUrl: photo.image_url,
+        fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+        capturedAt: photo.captured_at || new Date().toISOString(),
+      })),
+  }));
+}
+
+function buildGalleryPhotosFromModerator(data: ModeratorStoryResponse): PhotoCard[] {
+  return data.photos
+    .filter((photo) => photo.is_visible !== false && photo.status === "approved")
+    .map((photo) => ({
+      id: photo.id,
+      title: photo.title,
+      subtitle: photo.subtitle,
+      status: "approved",
+      imageUrl: photo.image_url,
+      fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+      capturedAt: photo.captured_at || new Date().toISOString(),
+    }));
+}
+
 function AccessGate({
   eventCode,
   pin,
@@ -2016,6 +2056,11 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       })),
     );
     setModeratorPhotos(data.photos.map(mapModeratorPhoto));
+    const scaffold = resolveStoryScaffold(data.event, data.settings, buildStorySectionsFromModerator(data));
+    setTimelineEvent(data.event);
+    setStorySettings(scaffold.settings);
+    setStorySections(scaffold.sections);
+    setGalleryPhotos(buildGalleryPhotosFromModerator(data));
   }
 
   async function requestModeratorWorkspace(
@@ -2104,7 +2149,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       if (!response.ok) {
         throw new Error(data.error || "Unable to delete photo.");
       }
-      setModeratorPhotos((current) => current.filter((photo) => photo.id !== data.photo_id));
+      await requestModeratorWorkspace({ action: "open" });
       setNotice({ tone: "success", message: "Photo deleted." });
     } catch (error) {
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "Delete failed." });
