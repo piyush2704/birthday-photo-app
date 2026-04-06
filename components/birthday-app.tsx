@@ -141,8 +141,22 @@ function HeaderIcon({
   if (kind === "story") {
     return (
       <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
-        <path d="M3 2.5h8.5A1.5 1.5 0 0 1 13 4v9.5c-.8-.6-1.7-.9-2.7-.9H3.8A1.8 1.8 0 0 0 2.5 13V4A1.5 1.5 0 0 1 4 2.5Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-        <path d="M5 5.5h5.2M5 8h4.3" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path
+          d="M2.75 3.75A1.75 1.75 0 0 1 4.5 2h4.75A2.25 2.25 0 0 1 11.5 4.25V13A2.6 2.6 0 0 0 9 11.75H4.5A1.75 1.75 0 0 0 2.75 13V3.75Z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M11.5 4.25A2.25 2.25 0 0 1 13.75 2H14v11h-.25A2.6 2.6 0 0 0 11.5 11.75"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
       </svg>
     );
   }
@@ -150,9 +164,42 @@ function HeaderIcon({
   if (kind === "gallery") {
     return (
       <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
-        <rect x="2.5" y="3" width="11" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
-        <circle cx="6" cy="6.2" r="1" fill="currentColor" />
-        <path d="M4 11l2.4-2.6 1.9 1.8 1.7-1.4L12 11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        <rect
+          x="2.25"
+          y="3"
+          width="8.5"
+          height="8.5"
+          rx="1.75"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M6.25 6.1h.01"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.8"
+        />
+        <path
+          d="m3.9 10 1.95-2.1 1.55 1.45 1.45-1.2 1.4 1.85"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <path
+          d="M10.4 5.1h1.85A1.5 1.5 0 0 1 13.75 6.6v4.15a1.5 1.5 0 0 1-1.5 1.5H8.1"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
       </svg>
     );
   }
@@ -160,17 +207,57 @@ function HeaderIcon({
   if (kind === "upload") {
     return (
       <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
-        <path d="M8 10.8V4.2M5.8 6.4L8 4.2l2.2 2.2" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M3.2 12.4h9.6" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path
+          d="M4.75 5.25 6 3.75h4l1.25 1.5h1A1.75 1.75 0 0 1 14 7v4.25A1.75 1.75 0 0 1 12.25 13H3.75A1.75 1.75 0 0 1 2 11.25V7a1.75 1.75 0 0 1 1.75-1.75h1Z"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
+        <circle
+          cx="8"
+          cy="8.8"
+          r="2.2"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="1.35"
+        />
       </svg>
     );
   }
 
   return (
     <svg aria-hidden="true" className="storybook-admin-icon" viewBox="0 0 16 16">
-      <path d="M8 2.7 9 3l.9-.6 1 1-.6.9.3 1 .9.5v1.4l-.9.5-.3 1 .6.9-1 1L9 10.9l-1 .3-1-.3-.9.6-1-1 .6-.9-.3-1-.9-.5V6.7l.9-.5.3-1-.6-.9 1-1 .9.6 1-.3Z" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
-      <circle cx="8" cy="7.4" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.1" />
+      <path
+        d="m8 2.4.9.55 1.05-.15.55.9 1 .35v1.05l.75.75-.35 1 .35 1-.75.75V9.7l-1 .35-.55.9-1.05-.15L8 11.35l-.9-.55-1.05.15-.55-.9-1-.35V8.65l-.75-.75.35-1-.35-1 .75-.75V4.1l1-.35.55-.9 1.05.15L8 2.4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.05"
+      />
+      <circle cx="8" cy="6.9" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.05" />
     </svg>
+  );
+}
+
+function BrandMoonMark() {
+  return (
+    <span className="storybook-brand-mark" aria-hidden="true">
+      <span className="storybook-brand-mark-inner">
+        <svg height="20" viewBox="0 0 32 32" width="20">
+          <path
+            d="M22 16 A10 10 0 1 1 12 6 A7 7 0 0 0 22 16 Z"
+            fill="#7BA7BE"
+            opacity="0.9"
+          />
+        </svg>
+      </span>
+      <span className="storybook-brand-mark-spark" />
+    </span>
   );
 }
 
@@ -335,6 +422,43 @@ function AccessGate({
   );
 }
 
+function StorybookLoading({
+  mode,
+}: {
+  mode: "timeline" | "gallery";
+}) {
+  const isGallery = mode === "gallery";
+
+  return (
+    <section className={`storybook-section loading-shell ${isGallery ? "loading-shell-gallery" : ""}`}>
+      <article className="storybook-card loading-card">
+        <div className="loading-copy">
+          <p className="storybook-overline">Opening Vaayu&apos;s scrapbook</p>
+          <h2>{isGallery ? "Loading birthday gallery" : "Loading the story timeline"}</h2>
+          <p className="storybook-copy">
+            {isGallery
+              ? "Preparing thumbnails, monthly groupings, and the latest memories from Vaayu&apos;s first year."
+              : "Gathering chapters, featured photographs, and the milestone storybook."}
+          </p>
+        </div>
+
+        <div className={`loading-visual ${isGallery ? "loading-visual-gallery" : ""}`} aria-hidden="true">
+          <span className="loading-photo loading-photo-a" />
+          <span className="loading-photo loading-photo-b" />
+          <span className="loading-photo loading-photo-c" />
+          <span className="loading-photo loading-photo-d" />
+        </div>
+
+        <div className="loading-lines" aria-hidden="true">
+          <span className="loading-line loading-line-wide" />
+          <span className="loading-line" />
+          <span className="loading-line loading-line-short" />
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function StoryTimelinePage({
   event,
   settings,
@@ -347,6 +471,7 @@ function StoryTimelinePage({
   onOpenGallery: () => void;
 }) {
   const [activeChapterId, setActiveChapterId] = useState(sections[0]?.id || "");
+  const [revealedChapterIds, setRevealedChapterIds] = useState<string[]>([]);
   const [lightboxState, setLightboxState] = useState<{
     photos: PhotoCard[];
     selectedIndex: number;
@@ -355,6 +480,11 @@ function StoryTimelinePage({
   useEffect(() => {
     if (sections.length === 0) return;
     setActiveChapterId((current) => current || sections[0].id);
+    setRevealedChapterIds((current) => {
+      const next = new Set(current);
+      next.add(sections[0].id);
+      return Array.from(next);
+    });
   }, [sections]);
 
   useEffect(() => {
@@ -368,8 +498,15 @@ function StoryTimelinePage({
         if (visible[0]) {
           setActiveChapterId(visible[0].target.id.replace("chapter-", ""));
         }
+        if (visible.length > 0) {
+          setRevealedChapterIds((current) => {
+            const next = new Set(current);
+            visible.forEach((entry) => next.add(entry.target.id.replace("chapter-", "")));
+            return Array.from(next);
+          });
+        }
       },
-      { threshold: 0.32 },
+      { threshold: 0.2, rootMargin: "0px 0px -8% 0px" },
     );
 
     sections.forEach((section) => {
@@ -450,7 +587,9 @@ function StoryTimelinePage({
 
           return (
             <article
-              className={`timeline-editorial-section ${reverse ? "timeline-editorial-section-reverse" : ""}`}
+              className={`timeline-editorial-section ${reverse ? "timeline-editorial-section-reverse" : ""} ${
+                revealedChapterIds.includes(section.id) ? "timeline-editorial-section-visible" : ""
+              }`}
               id={`chapter-${section.id}`}
               key={section.id}
               style={{ background: theme.color }}
@@ -647,6 +786,17 @@ function GalleryPage({
   const monthGroups = useMemo(() => groupPhotosByMonth(photos), [photos]);
   const [activeFilter, setActiveFilter] = useState("all");
 
+  function getGalleryCardClass(index: number) {
+    const pattern = [
+      "gallery-package-card-tall",
+      "gallery-package-card-square",
+      "gallery-package-card-square",
+      "gallery-package-card-tall",
+      "gallery-package-card-feature",
+    ] as const;
+    return pattern[index % pattern.length];
+  }
+
   const filteredPhotos = useMemo(() => {
     if (activeFilter === "all") return photos;
     return photos.filter((photo) => {
@@ -721,9 +871,9 @@ function GalleryPage({
                 ) : null}
 
                 <div className="gallery-package-grid">
-                  {group.photos.map((photo) => (
+                  {group.photos.map((photo, index) => (
                     <button
-                      className="gallery-package-card"
+                      className={`gallery-package-card ${getGalleryCardClass(index)}`}
                       key={photo.id}
                       onClick={() => setSelectedIndex(filteredPhotos.findIndex((item) => item.id === photo.id))}
                       type="button"
@@ -1306,54 +1456,59 @@ function ModeratorPage({
   const approvedPhotos = photos.filter((photo) => photo.status === "approved").length;
   const hiddenPhotos = photos.filter((photo) => !photo.isVisible).length;
   const pendingPhotos = photos.filter((photo) => photo.status === "pending").length;
+  const workspaceReady = Boolean(event && settings);
+  const activeEvent = event;
+  const activeSettings = settings;
 
   return (
     <section className="storybook-section">
-      <article className="moderator-entry-shell">
-        <div className="moderator-dashboard-header">
-          <div className="moderator-dashboard-brand">
-            <div className="moderator-dashboard-mark" aria-hidden="true">
-              <span />
+      {!workspaceReady ? (
+        <article className="moderator-entry-shell">
+          <div className="moderator-dashboard-header">
+            <div className="moderator-dashboard-brand">
+              <div className="moderator-dashboard-mark" aria-hidden="true">
+                <span />
+              </div>
+              <div>
+                <h2>Moderator Dashboard</h2>
+                <p>Manage Vaayu&apos;s storybook</p>
+              </div>
             </div>
-            <div>
-              <h2>Moderator Dashboard</h2>
-              <p>Manage Vaayu&apos;s storybook</p>
-            </div>
+            <div className="moderator-dashboard-star" aria-hidden="true">✦</div>
           </div>
-          <div className="moderator-dashboard-star" aria-hidden="true">✦</div>
-        </div>
-        <form className="moderator-entry-form" onSubmit={onOpen}>
-          <label className="storybook-field">
-            <span>Event code</span>
-            <input value={eventCode} onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())} />
-          </label>
-          <label className="storybook-field">
-            <span>Moderator PIN</span>
-            <input
-              autoComplete="off"
-              inputMode="numeric"
-              maxLength={4}
-              pattern="[0-9]*"
-              type="tel"
-              value={moderatorPin}
-              onChange={(event) => onPinChange(normalizePin(event.target.value))}
-              onKeyDown={preventEnterSubmit}
-            />
-          </label>
-          <button className="storybook-button storybook-button-primary" disabled={busy} type="submit">
-            {busy ? "Opening..." : "Open manager"}
-          </button>
-        </form>
-        <p className="storybook-copy moderator-entry-copy">
-          Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
-        </p>
-        <p className="storybook-copy moderator-entry-copy moderator-entry-note">
-          Guest story, gallery, and upload use the guest PIN. The moderator PIN only works on this manager page.
-        </p>
-        <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
-      </article>
+          <form className="moderator-entry-form" onSubmit={onOpen}>
+            <label className="storybook-field">
+              <span>Event code</span>
+              <input value={eventCode} onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())} />
+            </label>
+            <label className="storybook-field">
+              <span>Moderator PIN</span>
+              <input
+                autoComplete="off"
+                inputMode="numeric"
+                maxLength={4}
+                pattern="[0-9]*"
+                type="tel"
+                value={moderatorPin}
+                onChange={(event) => onPinChange(normalizePin(event.target.value))}
+                onKeyDown={preventEnterSubmit}
+              />
+            </label>
+            <button className="storybook-button storybook-button-primary" disabled={busy} type="submit">
+              {busy ? "Opening..." : "Open manager"}
+            </button>
+          </form>
+          <p className="storybook-copy moderator-entry-copy">
+            Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
+          </p>
+          <p className="storybook-copy moderator-entry-copy moderator-entry-note">
+            Guest story, gallery, and upload use the guest PIN. The moderator PIN only works on this manager page.
+          </p>
+          <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
+        </article>
+      ) : null}
 
-      {event && settings ? (
+      {workspaceReady && activeEvent && activeSettings ? (
         <>
           <div className="moderator-dashboard-shell">
             <div className="moderator-dashboard-header">
@@ -1409,19 +1564,19 @@ function ModeratorPage({
                   <div className="moderator-summary-grid">
                     <div>
                       <span>Baby</span>
-                      <strong>{event.title}</strong>
+                      <strong>{activeEvent.title}</strong>
                     </div>
                     <div>
                       <span>Tagline</span>
-                      <strong>{settings.cover_subtitle}</strong>
+                      <strong>{activeSettings.cover_subtitle}</strong>
                     </div>
                     <div>
                       <span>Timeline</span>
-                      <strong>{settings.grouping === "month" ? "Monthly" : "Yearly"}</strong>
+                      <strong>{activeSettings.grouping === "month" ? "Monthly" : "Yearly"}</strong>
                     </div>
                     <div>
                       <span>Birth Date</span>
-                      <strong>{settings.birth_date || getDefaultBirthDate(event.public_code) || "Not set"}</strong>
+                      <strong>{activeSettings.birth_date || getDefaultBirthDate(activeEvent.public_code) || "Not set"}</strong>
                     </div>
                   </div>
                 </article>
@@ -1729,7 +1884,7 @@ function StorybookShell({
     <main className="storybook-app-shell">
       <header className="storybook-header">
         <Link className="storybook-brand" href={guestHref("/")}>
-          <span className="storybook-brand-mark" aria-hidden="true" />
+          <BrandMoonMark />
           <span className="storybook-brand-copy">
             <strong>Vaayu</strong>
             <small>His First Year</small>
@@ -1792,6 +1947,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [galleryPhotos, setGalleryPhotos] = useState<PhotoCard[]>(
     hasSupabaseClientEnv ? [] : demoGalleryPhotos,
   );
+  const [guestLoading, setGuestLoading] = useState(false);
   const [uploadPreviews, setUploadPreviews] = useState<UploadPreview[]>([]);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
@@ -1863,6 +2019,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     let active = true;
 
     async function loadGuestContent() {
+      setGuestLoading(true);
       try {
         const [storyResponse, galleryResponse] = await Promise.all([
           fetch(`${functionsBaseUrl}/guest-story`, {
@@ -1924,6 +2081,10 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           tone: "error",
           message: error instanceof Error ? error.message : "Unable to load this event.",
         });
+      } finally {
+        if (active) {
+          setGuestLoading(false);
+        }
       }
     }
 
@@ -2611,20 +2772,28 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       ) : null}
 
       {!needsGuestAccess && currentScreen === "timeline" ? (
-        <StoryTimelinePage
-          event={timelineEvent}
-          onOpenGallery={() => openGuestPage("/gallery")}
-          sections={storySections}
-          settings={storySettings}
-        />
+        guestLoading ? (
+          <StorybookLoading mode="timeline" />
+        ) : (
+          <StoryTimelinePage
+            event={timelineEvent}
+            onOpenGallery={() => openGuestPage("/gallery")}
+            sections={storySections}
+            settings={storySettings}
+          />
+        )
       ) : null}
 
       {!needsGuestAccess && currentScreen === "gallery" ? (
-        <GalleryPage
-          event={timelineEvent}
-          onOpenUpload={() => openGuestPage("/upload")}
-          photos={galleryPhotos}
-        />
+        guestLoading ? (
+          <StorybookLoading mode="gallery" />
+        ) : (
+          <GalleryPage
+            event={timelineEvent}
+            onOpenUpload={() => openGuestPage("/upload")}
+            photos={galleryPhotos}
+          />
+        )
       ) : null}
 
       {!needsGuestAccess && currentScreen === "upload" ? (
