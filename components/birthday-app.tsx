@@ -28,6 +28,7 @@ import {
   extractCaptureDate,
   formatMonthYear,
   getFileExtension,
+  getDefaultBirthDate,
   groupPhotosByMonth,
 } from "../lib/storybook";
 import type {
@@ -36,7 +37,8 @@ import type {
   GuestStoryResponse,
   GuestUploadResponse,
   ModeratorDeleteResponse,
-  ModeratorGalleryResponse,
+  ModeratorStoryResponse,
+  ModeratorUploadResponse,
   PhotoCard,
   PhotoRecord,
   StorySectionCard,
@@ -80,6 +82,10 @@ type ModeratorPhoto = {
   imageUrl: string | null;
   fullImageUrl: string | null;
   status: string;
+  capturedAt: string;
+  isVisible: boolean;
+  timelineSectionId: string | null;
+  timelineSortOrder: number;
 };
 
 const screenMap = new Map<string, ScreenKey>([
@@ -110,6 +116,32 @@ async function createSignedViewUrls(paths: string[]) {
   }
 
   return new Map(data.map((entry) => [entry.path, entry.signedUrl]));
+}
+
+function mapModeratorPhoto(photo: {
+  id: string;
+  title: string;
+  subtitle: string;
+  image_url: string | null;
+  full_image_url?: string | null;
+  status: string;
+  captured_at?: string;
+  is_visible?: boolean;
+  timeline_section_id?: string | null;
+  timeline_sort_order?: number;
+}): ModeratorPhoto {
+  return {
+    id: photo.id,
+    title: photo.title,
+    subtitle: photo.subtitle,
+    imageUrl: photo.image_url,
+    fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+    status: photo.status,
+    capturedAt: photo.captured_at || new Date().toISOString(),
+    isVisible: photo.is_visible ?? true,
+    timelineSectionId: photo.timeline_section_id ?? null,
+    timelineSortOrder: photo.timeline_sort_order ?? 0,
+  };
 }
 
 function AccessGate({
@@ -837,33 +869,72 @@ function LegacyPage() {
 function ModeratorPage({
   eventCode,
   moderatorPin,
+  event,
+  settings,
+  sections,
   notice,
   busy,
   photos,
   deleteBusyId,
+  settingsBusy,
+  uploadBusySectionId,
+  draftUploads,
   onEventCodeChange,
   onPinChange,
   onOpen,
+  onSettingsChange,
+  onSyncSections,
+  onSectionChange,
+  onSectionReorder,
+  onPhotoChange,
+  onSectionFilesSelected,
+  onRemoveDraft,
+  onUploadToSection,
   onDelete,
 }: {
   eventCode: string;
   moderatorPin: string;
+  event: EventRecord | null;
+  settings: StorySettingsRecord | null;
+  sections: StorySectionRecord[];
   notice: Notice;
   busy: boolean;
   photos: ModeratorPhoto[];
   deleteBusyId: string | null;
+  settingsBusy: boolean;
+  uploadBusySectionId: string | null;
+  draftUploads: Record<string, UploadPreview[]>;
   onEventCodeChange: (value: string) => void;
   onPinChange: (value: string) => void;
   onOpen: (event: FormEvent<HTMLFormElement>) => void;
+  onSettingsChange: (updates: Partial<StorySettingsRecord>) => void;
+  onSyncSections: () => void;
+  onSectionChange: (sectionId: string, updates: Partial<StorySectionRecord>) => void;
+  onSectionReorder: (sectionId: string, direction: -1 | 1) => void;
+  onPhotoChange: (photoId: string, updates: Partial<PhotoRecord>) => void;
+  onSectionFilesSelected: (sectionId: string, event: ChangeEvent<HTMLInputElement>) => void;
+  onRemoveDraft: (sectionId: string, previewId: string) => void;
+  onUploadToSection: (sectionId: string) => void;
   onDelete: (photoId: string) => void;
 }) {
+  const photosBySection = useMemo(
+    () =>
+      sections.map((section) => ({
+        id: section.id,
+        items: photos
+          .filter((photo) => photo.timelineSectionId === section.id)
+          .sort((left, right) => left.timelineSortOrder - right.timelineSortOrder),
+      })),
+    [photos, sections],
+  );
+
   return (
     <section className="storybook-section">
       <article className="storybook-card access-card">
         <p className="storybook-overline">Moderator</p>
-        <h2>Open cleanup manager</h2>
+        <h2>Open timeline manager</h2>
         <p className="storybook-copy">
-          Use the separate moderator PIN to review or delete uploaded photos without signing in.
+          Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
         </p>
         <form className="storybook-form" onSubmit={onOpen}>
           <label className="storybook-field">
@@ -881,36 +952,274 @@ function ModeratorPage({
         <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
       </article>
 
-      {photos.length > 0 ? (
-        <article className="storybook-card photos-card">
-          <div className="photos-card-heading">
-            <div>
-              <h2>Uploaded photos</h2>
-              <p className="storybook-copy">Delete any image that should not remain in the birthday album.</p>
+      {event && settings ? (
+        <>
+          <section className="admin-layout moderator-layout">
+            <article className="storybook-card settings-card">
+              <h2>{event.title}</h2>
+              <p className="storybook-copy">
+                Build 12 monthly chapters from Vaayu&apos;s birth date and keep the timeline polished with printed-photo thumbnails.
+              </p>
+              <div className="settings-grid">
+                <label className="storybook-field">
+                  <span>Birth date</span>
+                  <input
+                    type="date"
+                    value={settings.birth_date || getDefaultBirthDate(event.public_code) || ""}
+                    onChange={(eventField) => onSettingsChange({ birth_date: eventField.target.value || null })}
+                  />
+                </label>
+                <label className="storybook-field">
+                  <span>Grouping</span>
+                  <select
+                    value={settings.grouping}
+                    onChange={(eventField) =>
+                      onSettingsChange({ grouping: eventField.target.value as "month" | "year" })
+                    }
+                  >
+                    <option value="month">Month</option>
+                    <option value="year">Year</option>
+                  </select>
+                </label>
+                <label className="storybook-field">
+                  <span>Section count</span>
+                  <input
+                    max={24}
+                    min={1}
+                    type="number"
+                    value={settings.section_count}
+                    onChange={(eventField) =>
+                      onSettingsChange({ section_count: Number(eventField.target.value) || 12 })
+                    }
+                  />
+                </label>
+                <label className="storybook-field">
+                  <span>Cover title</span>
+                  <input
+                    value={settings.cover_title}
+                    onChange={(eventField) => onSettingsChange({ cover_title: eventField.target.value })}
+                  />
+                </label>
+                <label className="storybook-field">
+                  <span>Cover subtitle</span>
+                  <input
+                    value={settings.cover_subtitle}
+                    onChange={(eventField) => onSettingsChange({ cover_subtitle: eventField.target.value })}
+                  />
+                </label>
+              </div>
+              <button
+                className="storybook-button storybook-button-secondary"
+                disabled={settingsBusy}
+                onClick={onSyncSections}
+                type="button"
+              >
+                {settingsBusy ? "Syncing..." : "Sync 12 monthly chapters"}
+              </button>
+            </article>
+
+            <article className="storybook-card sections-card moderator-sections-card">
+              <h2>Timeline chapters</h2>
+              <div className="admin-section-list moderator-section-list">
+                {sections.map((section) => (
+                  <article className="admin-section-card moderator-section-card" key={section.id}>
+                    <div className="admin-section-toolbar">
+                      <strong>{section.label}</strong>
+                      <div>
+                        <button onClick={() => onSectionReorder(section.id, -1)} type="button">
+                          ↑
+                        </button>
+                        <button onClick={() => onSectionReorder(section.id, 1)} type="button">
+                          ↓
+                        </button>
+                      </div>
+                    </div>
+                    <div className="settings-grid">
+                      <label className="storybook-field">
+                        <span>Label</span>
+                        <input
+                          value={section.label}
+                          onChange={(eventField) => onSectionChange(section.id, { label: eventField.target.value })}
+                        />
+                      </label>
+                      <label className="storybook-field">
+                        <span>Title</span>
+                        <input
+                          value={section.title}
+                          onChange={(eventField) => onSectionChange(section.id, { title: eventField.target.value })}
+                        />
+                      </label>
+                      <label className="storybook-field">
+                        <span>Subtitle</span>
+                        <input
+                          value={section.subtitle || ""}
+                          onChange={(eventField) => onSectionChange(section.id, { subtitle: eventField.target.value })}
+                        />
+                      </label>
+                      <label className="storybook-field">
+                        <span>Visible</span>
+                        <select
+                          value={String(section.visible)}
+                          onChange={(eventField) =>
+                            onSectionChange(section.id, { visible: eventField.target.value === "true" })
+                          }
+                        >
+                          <option value="true">Visible</option>
+                          <option value="false">Hidden</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label className="storybook-field">
+                      <span>Story text</span>
+                      <textarea
+                        rows={4}
+                        value={section.story_text || ""}
+                        onChange={(eventField) => onSectionChange(section.id, { story_text: eventField.target.value })}
+                      />
+                    </label>
+
+                    <div className="moderator-polaroid-row">
+                      {(photosBySection.find((item) => item.id === section.id)?.items || []).map((photo) => (
+                        <article className="moderator-polaroid" key={photo.id}>
+                          <div className="moderator-polaroid-frame">
+                            {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                          </div>
+                          <div className="moderator-polaroid-meta">
+                            <strong>{formatMonthYear(photo.capturedAt)}</strong>
+                            <label className="storybook-field">
+                              <span>Order</span>
+                              <input
+                                min={0}
+                                type="number"
+                                value={photo.timelineSortOrder}
+                                onChange={(eventField) =>
+                                  onPhotoChange(photo.id, {
+                                    timeline_sort_order: Number(eventField.target.value) || 0,
+                                  })
+                                }
+                              />
+                            </label>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+
+                    <div className="moderator-upload-composer">
+                      <label className="upload-dropzone moderator-upload-dropzone">
+                        <input accept="image/*" multiple onChange={(eventField) => onSectionFilesSelected(section.id, eventField)} type="file" />
+                        <span>Upload chapter photos</span>
+                        <small>These images will appear as printed-photo thumbnails in the timeline.</small>
+                      </label>
+
+                      {(draftUploads[section.id] || []).length > 0 ? (
+                        <div className="upload-preview-grid moderator-preview-grid">
+                          {(draftUploads[section.id] || []).map((preview) => (
+                            <article className="upload-preview-card" key={preview.id}>
+                              <img alt={preview.file.name} src={preview.url} />
+                              <div>
+                                <strong>{preview.file.name}</strong>
+                                <span>{formatMonthYear(preview.capturedAt)}</span>
+                              </div>
+                              <button
+                                className="upload-preview-remove"
+                                onClick={() => onRemoveDraft(section.id, preview.id)}
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                            </article>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <button
+                        className="storybook-button storybook-button-primary"
+                        disabled={uploadBusySectionId === section.id || (draftUploads[section.id] || []).length === 0}
+                        onClick={() => onUploadToSection(section.id)}
+                        type="button"
+                      >
+                        {uploadBusySectionId === section.id ? "Uploading..." : "Upload to this chapter"}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <article className="storybook-card photos-card">
+            <div className="photos-card-heading">
+              <div>
+                <h2>Photo visibility and assignment</h2>
+                <p className="storybook-copy">
+                  Show, hide, delete, and assign gallery uploads into the curated monthly timeline.
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="admin-photo-grid">
-            {photos.map((photo) => (
-              <article className="admin-photo-card" key={photo.id}>
-                <div className="admin-photo-frame">
-                  {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
-                </div>
-                <div className="admin-photo-meta">
-                  <strong>{photo.title}</strong>
-                  <span>{photo.subtitle}</span>
-                </div>
-                <button
-                  className="storybook-button storybook-button-danger"
-                  disabled={deleteBusyId === photo.id}
-                  onClick={() => onDelete(photo.id)}
-                  type="button"
-                >
-                  {deleteBusyId === photo.id ? "Deleting..." : "Delete photo"}
-                </button>
-              </article>
-            ))}
-          </div>
-        </article>
+            <div className="admin-photo-grid">
+              {photos.map((photo) => (
+                <article className="admin-photo-card" key={photo.id}>
+                  <div className="admin-photo-frame">
+                    {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                  </div>
+                  <div className="admin-photo-meta">
+                    <strong>{formatMonthYear(photo.capturedAt)}</strong>
+                    <span>{photo.title}</span>
+                  </div>
+                  <div className="admin-photo-controls">
+                    <label className="storybook-field">
+                      <span>Visibility</span>
+                      <select
+                        value={String(photo.isVisible)}
+                        onChange={(eventField) =>
+                          onPhotoChange(photo.id, { is_visible: eventField.target.value === "true" })
+                        }
+                      >
+                        <option value="true">Visible</option>
+                        <option value="false">Hidden</option>
+                      </select>
+                    </label>
+                    <label className="storybook-field">
+                      <span>Timeline chapter</span>
+                      <select
+                        value={photo.timelineSectionId || ""}
+                        onChange={(eventField) =>
+                          onPhotoChange(photo.id, { timeline_section_id: eventField.target.value || null })
+                        }
+                      >
+                        <option value="">Gallery only</option>
+                        {sections.map((section) => (
+                          <option key={section.id} value={section.id}>
+                            {section.label} · {section.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="storybook-field">
+                      <span>Featured order</span>
+                      <input
+                        min={0}
+                        type="number"
+                        value={photo.timelineSortOrder}
+                        onChange={(eventField) =>
+                          onPhotoChange(photo.id, { timeline_sort_order: Number(eventField.target.value) || 0 })
+                        }
+                      />
+                    </label>
+                    <button
+                      className="storybook-button storybook-button-danger"
+                      disabled={deleteBusyId === photo.id}
+                      onClick={() => onDelete(photo.id)}
+                      type="button"
+                    >
+                      {deleteBusyId === photo.id ? "Deleting..." : "Delete photo"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </article>
+        </>
       ) : null}
     </section>
   );
@@ -1025,7 +1334,13 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [moderatorPin, setModeratorPin] = useState("");
   const [moderatorBusy, setModeratorBusy] = useState(false);
   const [moderatorDeleteBusyId, setModeratorDeleteBusyId] = useState<string | null>(null);
+  const [moderatorUploadBusySectionId, setModeratorUploadBusySectionId] = useState<string | null>(null);
+  const [moderatorSettingsBusy, setModeratorSettingsBusy] = useState(false);
+  const [moderatorEvent, setModeratorEvent] = useState<EventRecord | null>(null);
+  const [moderatorSettings, setModeratorSettings] = useState<StorySettingsRecord | null>(null);
+  const [moderatorSections, setModeratorSections] = useState<StorySectionRecord[]>([]);
   const [moderatorPhotos, setModeratorPhotos] = useState<ModeratorPhoto[]>([]);
+  const [moderatorDraftUploads, setModeratorDraftUploads] = useState<Record<string, UploadPreview[]>>({});
 
   useEffect(() => {
     if (!hasSupabaseClientEnv) return;
@@ -1283,6 +1598,69 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     }
   }
 
+  function applyModeratorWorkspace(data: ModeratorStoryResponse) {
+    setModeratorEvent(data.event);
+    setModeratorSettings(data.settings);
+    setModeratorSections(
+      data.sections.map((section) => ({
+        id: section.id,
+        event_id: data.event.id,
+        label: section.label,
+        title: section.title,
+        subtitle: section.subtitle,
+        story_text: section.story_text,
+        sort_order: section.sort_order,
+        visible: section.visible,
+        created_at: data.event.created_at,
+        updated_at: data.event.created_at,
+      })),
+    );
+    setModeratorPhotos(data.photos.map(mapModeratorPhoto));
+  }
+
+  async function requestModeratorWorkspace(
+    action:
+      | { action?: "open" }
+      | {
+          action: "update_settings";
+          settings: Partial<StorySettingsRecord>;
+        }
+      | {
+          action: "sync_sections";
+        }
+      | {
+          action: "update_section";
+          section_id: string;
+          section: Partial<StorySectionRecord>;
+        }
+      | {
+          action: "reorder_section";
+          section_id: string;
+          direction: -1 | 1;
+        }
+      | {
+          action: "update_photo";
+          photo_id: string;
+          photo: Partial<PhotoRecord>;
+        },
+  ) {
+    const response = await fetch(`${functionsBaseUrl}/moderator-story`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_code: adminEventCode.trim().toUpperCase(),
+        moderator_pin: moderatorPin.trim(),
+        ...action,
+      }),
+    });
+    const data = (await response.json()) as ModeratorStoryResponse & { error?: string };
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to update moderator workspace.");
+    }
+    applyModeratorWorkspace(data);
+    return data;
+  }
+
   async function handleModeratorOpen(eventForm: FormEvent<HTMLFormElement>) {
     eventForm.preventDefault();
     if (!hasSupabaseClientEnv) {
@@ -1296,30 +1674,12 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
 
     setModeratorBusy(true);
     try {
-      const response = await fetch(`${functionsBaseUrl}/moderator-gallery`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          event_code: adminEventCode.trim().toUpperCase(),
-          moderator_pin: moderatorPin.trim(),
-        }),
-      });
-      const data = (await response.json()) as ModeratorGalleryResponse & { error?: string };
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to open moderator manager.");
-      }
-      setModeratorPhotos(
-        data.photos.map((photo) => ({
-          id: photo.id,
-          title: photo.title,
-          subtitle: photo.subtitle,
-          imageUrl: photo.image_url,
-          fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
-          status: photo.status,
-        })),
-      );
-      setNotice({ tone: "success", message: `Loaded ${data.photos.length} photos for moderation.` });
+      const data = await requestModeratorWorkspace({ action: "open" });
+      setNotice({ tone: "success", message: `Loaded ${data.sections.length} monthly chapters for moderation.` });
     } catch (error) {
+      setModeratorEvent(null);
+      setModeratorSettings(null);
+      setModeratorSections([]);
       setModeratorPhotos([]);
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "Moderator access failed." });
     } finally {
@@ -1350,6 +1710,163 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "Delete failed." });
     } finally {
       setModeratorDeleteBusyId(null);
+    }
+  }
+
+  async function handleModeratorSettingsChange(updates: Partial<StorySettingsRecord>) {
+    if (!hasSupabaseClientEnv) return;
+    setModeratorSettingsBusy(true);
+    try {
+      await requestModeratorWorkspace({ action: "update_settings", settings: updates });
+      setNotice({ tone: "success", message: "Timeline settings updated." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Settings update failed." });
+    } finally {
+      setModeratorSettingsBusy(false);
+    }
+  }
+
+  async function handleModeratorSyncSections() {
+    if (!hasSupabaseClientEnv) return;
+    setModeratorSettingsBusy(true);
+    try {
+      await requestModeratorWorkspace({ action: "sync_sections" });
+      setNotice({ tone: "success", message: "Monthly timeline sections synced." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to sync sections." });
+    } finally {
+      setModeratorSettingsBusy(false);
+    }
+  }
+
+  async function handleModeratorSectionChange(sectionId: string, updates: Partial<StorySectionRecord>) {
+    if (!hasSupabaseClientEnv) return;
+    try {
+      await requestModeratorWorkspace({
+        action: "update_section",
+        section_id: sectionId,
+        section: updates,
+      });
+      setNotice({ tone: "success", message: "Timeline section updated." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to update section." });
+    }
+  }
+
+  async function handleModeratorSectionReorder(sectionId: string, direction: -1 | 1) {
+    if (!hasSupabaseClientEnv) return;
+    try {
+      await requestModeratorWorkspace({ action: "reorder_section", section_id: sectionId, direction });
+      setNotice({ tone: "success", message: "Timeline section reordered." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to reorder section." });
+    }
+  }
+
+  async function handleModeratorPhotoChange(photoId: string, updates: Partial<PhotoRecord>) {
+    if (!hasSupabaseClientEnv) return;
+    try {
+      await requestModeratorWorkspace({ action: "update_photo", photo_id: photoId, photo: updates });
+      setNotice({ tone: "success", message: "Photo updated." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to update photo." });
+    }
+  }
+
+  async function handleModeratorFilesSelected(sectionId: string, event: ChangeEvent<HTMLInputElement>) {
+    const nextFiles = Array.from(event.target.files || []);
+    if (nextFiles.length === 0) return;
+
+    const nextPreviews = await Promise.all(
+      nextFiles.map(async (file, index) => {
+        const { capturedAt } = await extractCaptureDate(file);
+        return {
+          id: `${sectionId}-${file.name}-${file.lastModified}-${index}`,
+          file,
+          url: URL.createObjectURL(file),
+          capturedAt,
+        };
+      }),
+    );
+
+    setModeratorDraftUploads((current) => ({
+      ...current,
+      [sectionId]: [...(current[sectionId] || []), ...nextPreviews],
+    }));
+    event.target.value = "";
+  }
+
+  function removeModeratorDraft(sectionId: string, previewId: string) {
+    setModeratorDraftUploads((current) => {
+      const existing = current[sectionId] || [];
+      const match = existing.find((preview) => preview.id === previewId);
+      if (match) {
+        URL.revokeObjectURL(match.url);
+      }
+      return {
+        ...current,
+        [sectionId]: existing.filter((preview) => preview.id !== previewId),
+      };
+    });
+  }
+
+  async function handleModeratorUpload(sectionId: string) {
+    if (!hasSupabaseClientEnv) return;
+    const previews = moderatorDraftUploads[sectionId] || [];
+    if (previews.length === 0) {
+      setNotice({ tone: "error", message: "Choose one or more photos for this month first." });
+      return;
+    }
+
+    setModeratorUploadBusySectionId(sectionId);
+    try {
+      const sectionPhotos = moderatorPhotos.filter((photo) => photo.timelineSectionId === sectionId);
+      let sortBase = sectionPhotos.length;
+
+      for (const preview of previews) {
+        const extension = getFileExtension(preview.file);
+        const response = await fetch(`${functionsBaseUrl}/moderator-upload`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_code: adminEventCode.trim().toUpperCase(),
+            moderator_pin: moderatorPin.trim(),
+            file_ext: extension,
+            captured_at: preview.capturedAt,
+            timeline_section_id: sectionId,
+            timeline_sort_order: sortBase,
+          }),
+        });
+
+        const data = (await response.json()) as ModeratorUploadResponse & { error?: string };
+        if (!response.ok) {
+          throw new Error(data.error || "Unable to create the upload slot.");
+        }
+
+        const uploadResponse = await fetch(data.signed_url, {
+          method: "PUT",
+          body: preview.file,
+          headers: {
+            "Content-Type": preview.file.type || "application/octet-stream",
+            "x-upsert": "false",
+          },
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("The moderator upload did not complete.");
+        }
+
+        sortBase += 1;
+      }
+
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+      setModeratorDraftUploads((current) => ({ ...current, [sectionId]: [] }));
+      await requestModeratorWorkspace({ action: "open" });
+      setNotice({ tone: "success", message: "Timeline photos uploaded." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to upload chapter photos." });
+    } finally {
+      setModeratorUploadBusySectionId(null);
     }
   }
 
@@ -1395,7 +1912,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           .order("created_at", { ascending: false }),
         supabase
           .from("event_story_settings")
-          .select("event_id, grouping, section_count, cover_title, cover_subtitle, updated_at")
+          .select("event_id, grouping, section_count, birth_date, cover_title, cover_subtitle, updated_at")
           .eq("event_id", eventData.id)
           .maybeSingle(),
         supabase
@@ -1418,6 +1935,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           event_id: eventData.id,
           grouping: "month",
           section_count: 12,
+          birth_date: getDefaultBirthDate(eventData.public_code),
           cover_title: `${eventData.title} Timeline`,
           cover_subtitle: "A chapter-based scrapbook curated by the family.",
           updated_at: eventData.created_at,
@@ -1460,6 +1978,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       event_id: adminEvent.id,
       grouping: updates.grouping ?? adminSettings?.grouping ?? "month",
       section_count: updates.section_count ?? adminSettings?.section_count ?? 12,
+      birth_date: updates.birth_date ?? adminSettings?.birth_date ?? getDefaultBirthDate(adminEvent.public_code),
       cover_title: updates.cover_title ?? adminSettings?.cover_title ?? `${adminEvent.title} Timeline`,
       cover_subtitle:
         updates.cover_subtitle ??
@@ -1471,7 +1990,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     const { data, error } = await supabase
       .from("event_story_settings")
       .upsert(payload, { onConflict: "event_id" })
-      .select("event_id, grouping, section_count, cover_title, cover_subtitle, updated_at")
+      .select("event_id, grouping, section_count, birth_date, cover_title, cover_subtitle, updated_at")
       .single();
 
     if (error) {
@@ -1488,13 +2007,14 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     const supabase = getSupabaseClient();
     const grouping = adminSettings?.grouping || "month";
     const targetCount = adminSettings?.section_count || 12;
+    const birthDate = adminSettings?.birth_date ?? getDefaultBirthDate(adminEvent.public_code);
     const existing = [...adminSections].sort((left, right) => left.sort_order - right.sort_order);
 
     const inserts = [];
     for (let index = existing.length; index < targetCount; index += 1) {
       inserts.push({
         event_id: adminEvent.id,
-        ...buildDefaultSectionSeed(index, grouping),
+        ...buildDefaultSectionSeed(index, grouping, birthDate),
       });
     }
 
@@ -1678,6 +2198,8 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
         <ModeratorPage
           busy={moderatorBusy}
           deleteBusyId={moderatorDeleteBusyId}
+          draftUploads={moderatorDraftUploads}
+          event={moderatorEvent}
           eventCode={adminEventCode}
           moderatorPin={moderatorPin}
           notice={notice}
@@ -1685,7 +2207,19 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           onEventCodeChange={setAdminEventCode}
           onOpen={handleModeratorOpen}
           onPinChange={setModeratorPin}
+          onPhotoChange={handleModeratorPhotoChange}
+          onRemoveDraft={removeModeratorDraft}
+          onSectionChange={handleModeratorSectionChange}
+          onSectionFilesSelected={handleModeratorFilesSelected}
+          onSectionReorder={handleModeratorSectionReorder}
+          onSettingsChange={handleModeratorSettingsChange}
+          onSyncSections={handleModeratorSyncSections}
+          onUploadToSection={handleModeratorUpload}
           photos={moderatorPhotos}
+          sections={moderatorSections}
+          settings={moderatorSettings}
+          settingsBusy={moderatorSettingsBusy}
+          uploadBusySectionId={moderatorUploadBusySectionId}
         />
       ) : null}
 

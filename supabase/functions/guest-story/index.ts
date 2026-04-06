@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       await Promise.all([
         supabase
           .from("event_story_settings")
-          .select("event_id, grouping, section_count, cover_title, cover_subtitle, updated_at")
+          .select("event_id, grouping, section_count, birth_date, cover_title, cover_subtitle, updated_at")
           .eq("event_id", event.id)
           .maybeSingle(),
         supabase

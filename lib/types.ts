@@ -57,6 +57,7 @@ export type StorySettingsRecord = {
   event_id: string;
   grouping: "month" | "year";
   section_count: number;
+  birth_date: string | null;
   cover_title: string;
   cover_subtitle: string;
   updated_at: string;
@@ -156,11 +157,42 @@ export type ModeratorGalleryPhoto = {
   status: PhotoStatus;
   image_url: string | null;
   full_image_url?: string | null;
+  captured_at?: string;
+  is_visible?: boolean;
+  timeline_section_id?: string | null;
+  timeline_sort_order?: number;
 };
 
 export type ModeratorGalleryResponse = {
   event: EventRecord;
   photos: ModeratorGalleryPhoto[];
+};
+
+export type ModeratorStorySection = Omit<StorySectionRecord, "event_id" | "created_at" | "updated_at"> & {
+  photos: ModeratorGalleryPhoto[];
+};
+
+export type ModeratorStoryResponse = {
+  event: EventRecord;
+  settings: StorySettingsRecord;
+  sections: ModeratorStorySection[];
+  photos: ModeratorGalleryPhoto[];
+};
+
+export type ModeratorUploadRequest = {
+  event_code: string;
+  moderator_pin: string;
+  file_ext: string;
+  captured_at?: string;
+  timeline_section_id?: string | null;
+  timeline_sort_order?: number;
+};
+
+export type ModeratorUploadResponse = {
+  photo_id: string;
+  storage_path: string;
+  signed_url: string;
+  token: string;
 };
 
 export type ModeratorDeleteRequest = {

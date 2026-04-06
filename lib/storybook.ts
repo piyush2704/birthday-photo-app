@@ -21,9 +21,33 @@ export const MONTH_LABELS = [
   "December",
 ];
 
+export const DEFAULT_BIRTH_DATES: Record<string, string> = {
+  VAAYU: "2025-04-29",
+};
+
 export function formatMonthYear(dateString: string) {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+export function getDefaultBirthDate(eventCode: string) {
+  return DEFAULT_BIRTH_DATES[eventCode.toUpperCase()] || null;
+}
+
+function addMonths(dateString: string, count: number) {
+  const date = new Date(dateString);
+  date.setMonth(date.getMonth() + count);
+  return date;
+}
+
+function addDays(date: Date, count: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + count);
+  return next;
+}
+
+function formatMonthDay(date: Date) {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export function monthKeyFromDate(dateString: string) {
@@ -60,7 +84,7 @@ export function buildPhotoCardFromGuest(photo: GuestGalleryPhoto): PhotoCard {
   };
 }
 
-export function buildDefaultSectionSeed(index: number, grouping: "month" | "year") {
+export function buildDefaultSectionSeed(index: number, grouping: "month" | "year", birthDate?: string | null) {
   const order = index + 1;
   if (grouping === "year") {
     return {
@@ -68,6 +92,22 @@ export function buildDefaultSectionSeed(index: number, grouping: "month" | "year
       title: `Chapter ${order}`,
       subtitle: "A keepsake chapter waiting for photos",
       story_text: "Add a few lines here to turn this group of images into part of Vaayu's scrapbook story.",
+      sort_order: order,
+      visible: true,
+    };
+  }
+
+  if (birthDate) {
+    const start = addMonths(birthDate, index);
+    const end = addDays(addMonths(birthDate, index + 1), -1);
+    return {
+      label: `Month ${String(order).padStart(2, "0")}`,
+      title: formatMonthYear(start.toISOString()),
+      subtitle: `${formatMonthDay(start)} - ${formatMonthDay(end)}`,
+      story_text:
+        order === 1
+          ? "The first little chapter of Vaayu's storybook begins here."
+          : `Memories, milestones, and tiny details from month ${String(order).padStart(2, "0")} of Vaayu's first year.`,
       sort_order: order,
       visible: true,
     };
@@ -196,6 +236,7 @@ export const demoStorySettings: StorySettingsRecord = {
   event_id: "demo-event-id",
   grouping: "month",
   section_count: 12,
+  birth_date: "2025-04-29",
   cover_title: "Vaayu's First Trip Through the Year",
   cover_subtitle: "A storybook scrapbook of little moments, one month at a time.",
   updated_at: "2026-04-03T02:30:00.000Z",
