@@ -116,27 +116,26 @@ Deno.serve(async (req) => {
 
     const urlMap = new Map<string, { thumbUrl: string | null; fullUrl: string | null }>()
     for (const photo of photos || []) {
-      const [thumbResult, fullResult] = await Promise.all([
-        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
-          transform: {
-            width: 960,
-            height: 1200,
-            resize: "cover",
-            quality: 72,
-          },
-        }),
-        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600),
-      ])
+      const fullResult = await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600)
 
-      if (thumbResult.error || fullResult.error) {
+      if (fullResult.error) {
         return new Response(
           JSON.stringify({ error: "Failed to prepare story image URLs" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         )
       }
 
+      const thumbResult = await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
+        transform: {
+          width: 960,
+          height: 1200,
+          resize: "cover",
+          quality: 72,
+        },
+      })
+
       urlMap.set(photo.storage_path, {
-        thumbUrl: thumbResult.data?.signedUrl ?? null,
+        thumbUrl: thumbResult.data?.signedUrl ?? fullResult.data?.signedUrl ?? null,
         fullUrl: fullResult.data?.signedUrl ?? null,
       })
     }
