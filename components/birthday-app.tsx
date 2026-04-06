@@ -131,6 +131,47 @@ const chapterMilestones = [
   "Happy First Birthday, Vaayu!",
 ];
 
+function HeaderIcon({
+  kind,
+}: {
+  kind: "story" | "gallery" | "upload" | "settings";
+}) {
+  if (kind === "story") {
+    return (
+      <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
+        <path d="M3 2.5h8.5A1.5 1.5 0 0 1 13 4v9.5c-.8-.6-1.7-.9-2.7-.9H3.8A1.8 1.8 0 0 0 2.5 13V4A1.5 1.5 0 0 1 4 2.5Z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+        <path d="M5 5.5h5.2M5 8h4.3" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "gallery") {
+    return (
+      <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
+        <rect x="2.5" y="3" width="11" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
+        <circle cx="6" cy="6.2" r="1" fill="currentColor" />
+        <path d="M4 11l2.4-2.6 1.9 1.8 1.7-1.4L12 11" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (kind === "upload") {
+    return (
+      <svg aria-hidden="true" className="storybook-tab-icon" viewBox="0 0 16 16">
+        <path d="M8 10.8V4.2M5.8 6.4L8 4.2l2.2 2.2" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3.2 12.4h9.6" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg aria-hidden="true" className="storybook-admin-icon" viewBox="0 0 16 16">
+      <path d="M8 2.7 9 3l.9-.6 1 1-.6.9.3 1 .9.5v1.4l-.9.5-.3 1 .6.9-1 1L9 10.9l-1 .3-1-.3-.9.6-1-1 .6-.9-.3-1-.9-.5V6.7l.9-.5.3-1-.6-.9 1-1 .9.6 1-.3Z" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+      <circle cx="8" cy="7.4" r="1.7" fill="none" stroke="currentColor" strokeWidth="1.1" />
+    </svg>
+  );
+}
+
 function getScreen(pathname: string): ScreenKey {
   return screenMap.get(pathname) || "legacy";
 }
@@ -1597,19 +1638,17 @@ function StorybookShell({
   children,
   guestHref,
   currentScreen,
-  notice,
   adminVisible,
 }: {
   children: ReactNode;
   guestHref: (path: string) => string;
   currentScreen: ScreenKey;
-  notice: Notice;
   adminVisible: boolean;
 }) {
   const tabs = [
-    { key: "timeline", href: guestHref("/"), label: "Story" },
-    { key: "gallery", href: guestHref("/gallery"), label: "Gallery" },
-    { key: "upload", href: guestHref("/upload"), label: "Upload" },
+    { key: "timeline", href: guestHref("/"), label: "Story", icon: "story" },
+    { key: "gallery", href: guestHref("/gallery"), label: "Gallery", icon: "gallery" },
+    { key: "upload", href: guestHref("/upload"), label: "Upload", icon: "upload" },
   ] as const;
 
   return (
@@ -1617,28 +1656,31 @@ function StorybookShell({
       <header className="storybook-header">
         <Link className="storybook-brand" href={guestHref("/")}>
           <span className="storybook-brand-mark" aria-hidden="true" />
-          <span>
+          <span className="storybook-brand-copy">
             <strong>Vaayu</strong>
             <small>His First Year</small>
           </span>
         </Link>
         <nav className="storybook-nav" aria-label="Primary">
-          {tabs.map((tab) => (
-            <Link
-              className={`storybook-tab ${currentScreen === tab.key ? "storybook-tab-active" : ""}`}
-              href={tab.href}
-              key={tab.key}
-            >
-              {tab.label}
-            </Link>
-          ))}
+          {tabs.map((tab) => {
+            return (
+              <Link
+                className={`storybook-tab ${currentScreen === tab.key ? "storybook-tab-active" : ""}`}
+                href={tab.href}
+                key={tab.key}
+              >
+                <HeaderIcon kind={tab.icon} />
+                <span className="storybook-tab-label">{tab.label}</span>
+              </Link>
+            );
+          })}
           {adminVisible ? (
             <Link
               className={`storybook-admin-link ${currentScreen === "moderator" ? "storybook-admin-link-active" : ""}`}
               href="/moderator"
               title="Moderator"
             >
-              ⚙
+              <HeaderIcon kind="settings" />
             </Link>
           ) : null}
         </nav>
@@ -2475,7 +2517,6 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       adminVisible={Boolean(session)}
       currentScreen={currentScreen}
       guestHref={guestHref}
-      notice={notice}
     >
       {needsGuestAccess ? (
         <AccessGate
