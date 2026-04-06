@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Birthday Photo App",
-  description: "Mobile-first event photo sharing with guest uploads and moderation.",
+  title: "Vaayu's 1st Birthday",
+  description: "A scrapbook-style birthday story, gallery, upload flow, and family admin for Vaayu.",
 };
 
 export default function RootLayout({
