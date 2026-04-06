@@ -1,4 +1,3 @@
-import "@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4"
 
 type ModeratorGalleryRequest = {
@@ -95,20 +94,32 @@ Deno.serve(async (req) => {
       )
     }
 
-    const paths = (photos || []).map((photo) => photo.storage_path)
-    const signedUrls =
-      paths.length > 0
-        ? await supabase.storage.from("event-photos").createSignedUrls(paths, 3600)
-        : { data: [], error: null }
+    const urlMap = new Map<string, { thumbUrl: string | null; fullUrl: string | null }>()
+    for (const photo of photos || []) {
+      const [thumbResult, fullResult] = await Promise.all([
+        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
+          transform: {
+            width: 480,
+            height: 480,
+            resize: "cover",
+            quality: 72,
+          },
+        }),
+        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600),
+      ])
 
-    if (signedUrls.error) {
-      return new Response(
-        JSON.stringify({ error: "Failed to prepare image URLs" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      )
+      if (thumbResult.error || fullResult.error) {
+        return new Response(
+          JSON.stringify({ error: "Failed to prepare image URLs" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
+      }
+
+      urlMap.set(photo.storage_path, {
+        thumbUrl: thumbResult.data?.signedUrl ?? null,
+        fullUrl: fullResult.data?.signedUrl ?? null,
+      })
     }
-
-    const urlMap = new Map((signedUrls.data || []).map((entry) => [entry.path, entry.signedUrl]))
 
     return new Response(
       JSON.stringify({
@@ -124,7 +135,8 @@ Deno.serve(async (req) => {
           title: photo.caption || "Birthday upload",
           subtitle: `Shared by ${photo.uploader_display_name || "Guest"}`,
           status: photo.status,
-          image_url: urlMap.get(photo.storage_path) ?? null,
+          image_url: urlMap.get(photo.storage_path)?.thumbUrl ?? null,
+          full_image_url: urlMap.get(photo.storage_path)?.fullUrl ?? null,
         })),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

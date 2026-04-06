@@ -91,20 +91,32 @@ Deno.serve(async (req) => {
       )
     }
 
-    const paths = (photos || []).map((photo) => photo.storage_path)
-    const signedUrls =
-      paths.length > 0
-        ? await supabase.storage.from("event-photos").createSignedUrls(paths, 3600)
-        : { data: [], error: null }
+    const urlMap = new Map<string, { thumbUrl: string | null; fullUrl: string | null }>()
+    for (const photo of photos || []) {
+      const [thumbResult, fullResult] = await Promise.all([
+        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
+          transform: {
+            width: 720,
+            height: 720,
+            resize: "cover",
+            quality: 72,
+          },
+        }),
+        supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600),
+      ])
 
-    if (signedUrls.error) {
-      return new Response(
-        JSON.stringify({ error: "Failed to prepare gallery image URLs" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      )
+      if (thumbResult.error || fullResult.error) {
+        return new Response(
+          JSON.stringify({ error: "Failed to prepare gallery image URLs" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        )
+      }
+
+      urlMap.set(photo.storage_path, {
+        thumbUrl: thumbResult.data?.signedUrl ?? null,
+        fullUrl: fullResult.data?.signedUrl ?? null,
+      })
     }
-
-    const urlMap = new Map((signedUrls.data || []).map((entry) => [entry.path, entry.signedUrl]))
 
     return new Response(
       JSON.stringify({
@@ -114,7 +126,8 @@ Deno.serve(async (req) => {
           title: photo.caption || "Party photo",
           subtitle: `Captured ${new Date(photo.captured_at ?? photo.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`,
           status: "approved",
-          image_url: urlMap.get(photo.storage_path) ?? null,
+          image_url: urlMap.get(photo.storage_path)?.thumbUrl ?? null,
+          full_image_url: urlMap.get(photo.storage_path)?.fullUrl ?? null,
           captured_at: photo.captured_at ?? photo.created_at,
         })),
       }),

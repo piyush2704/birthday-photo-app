@@ -55,6 +55,7 @@ export function buildPhotoCardFromGuest(photo: GuestGalleryPhoto): PhotoCard {
     subtitle: photo.subtitle,
     status: photo.status,
     imageUrl: photo.image_url,
+    fullImageUrl: photo.full_image_url ?? photo.image_url,
     capturedAt: photo.captured_at,
   };
 }

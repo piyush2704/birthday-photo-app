@@ -783,6 +783,28 @@ body {
   gap: 16px;
 }
 
+.lightbox-frame figcaption div {
+  display: grid;
+  gap: 4px;
+}
+
+.lightbox-frame figcaption span {
+  color: rgba(255, 248, 241, 0.76);
+  font-size: 0.82rem;
+}
+
+.lightbox-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff8f1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 .lightbox-close,
 .lightbox-nav {
   position: absolute;

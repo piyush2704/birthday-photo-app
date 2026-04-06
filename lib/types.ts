@@ -46,6 +46,7 @@ export type PhotoCard = {
   subtitle: string;
   status: PhotoStatus;
   imageUrl: string | null;
+  fullImageUrl?: string | null;
   capturedAt: string;
   visible?: boolean;
   timelineSectionId?: string | null;
@@ -124,6 +125,7 @@ export type GuestGalleryPhoto = {
   subtitle: string;
   status: Extract<PhotoStatus, "approved">;
   image_url: string | null;
+  full_image_url?: string | null;
   captured_at: string;
 };
 
@@ -153,6 +155,7 @@ export type ModeratorGalleryPhoto = {
   subtitle: string;
   status: PhotoStatus;
   image_url: string | null;
+  full_image_url?: string | null;
 };
 
 export type ModeratorGalleryResponse = {

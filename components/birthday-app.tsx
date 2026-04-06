@@ -70,6 +70,7 @@ type UploadPreview = {
 
 type AdminPhoto = PhotoRecord & {
   imageUrl: string | null;
+  fullImageUrl?: string | null;
 };
 
 type ModeratorPhoto = {
@@ -77,6 +78,7 @@ type ModeratorPhoto = {
   title: string;
   subtitle: string;
   imageUrl: string | null;
+  fullImageUrl: string | null;
   status: string;
 };
 
@@ -272,12 +274,28 @@ function Lightbox({
         ‹
       </button>
       <figure className="lightbox-frame" onClick={(event) => event.stopPropagation()}>
-        {active.imageUrl ? <img alt={active.title} src={active.imageUrl} /> : null}
+        {active.fullImageUrl || active.imageUrl ? (
+          <img alt={active.title} src={active.fullImageUrl || active.imageUrl || ""} />
+        ) : null}
         <figcaption>
-          <strong>{active.title}</strong>
-          <span>
-            {selectedIndex + 1} / {photos.length}
-          </span>
+          <div>
+            <strong>{active.title}</strong>
+            <span>
+              {selectedIndex + 1} / {photos.length}
+            </span>
+          </div>
+          {active.fullImageUrl ? (
+            <a
+              className="lightbox-download"
+              download
+              href={active.fullImageUrl}
+              onClick={(event) => event.stopPropagation()}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Download full size
+            </a>
+          ) : null}
         </figcaption>
       </figure>
       <button
@@ -1296,6 +1314,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           title: photo.title,
           subtitle: photo.subtitle,
           imageUrl: photo.image_url,
+          fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
           status: photo.status,
         })),
       );
