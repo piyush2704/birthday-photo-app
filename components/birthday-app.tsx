@@ -35,6 +35,8 @@ import type {
   GuestGalleryResponse,
   GuestStoryResponse,
   GuestUploadResponse,
+  ModeratorDeleteResponse,
+  ModeratorGalleryResponse,
   PhotoCard,
   PhotoRecord,
   StorySectionCard,
@@ -42,7 +44,7 @@ import type {
   StorySettingsRecord,
 } from "../lib/types";
 
-type ScreenKey = "timeline" | "gallery" | "upload" | "admin" | "legacy";
+type ScreenKey = "timeline" | "gallery" | "upload" | "admin" | "moderator" | "legacy";
 type NoticeTone = "neutral" | "success" | "error";
 
 type Notice = {
@@ -70,12 +72,21 @@ type AdminPhoto = PhotoRecord & {
   imageUrl: string | null;
 };
 
+type ModeratorPhoto = {
+  id: string;
+  title: string;
+  subtitle: string;
+  imageUrl: string | null;
+  status: string;
+};
+
 const screenMap = new Map<string, ScreenKey>([
   ["/", "timeline"],
   ["/timeline", "timeline"],
   ["/gallery", "gallery"],
   ["/upload", "upload"],
   ["/admin", "admin"],
+  ["/moderator", "moderator"],
 ]);
 
 const storedEventIdKey = "birthday-photo-app.event-id";
@@ -805,6 +816,88 @@ function LegacyPage() {
   );
 }
 
+function ModeratorPage({
+  eventCode,
+  moderatorPin,
+  notice,
+  busy,
+  photos,
+  deleteBusyId,
+  onEventCodeChange,
+  onPinChange,
+  onOpen,
+  onDelete,
+}: {
+  eventCode: string;
+  moderatorPin: string;
+  notice: Notice;
+  busy: boolean;
+  photos: ModeratorPhoto[];
+  deleteBusyId: string | null;
+  onEventCodeChange: (value: string) => void;
+  onPinChange: (value: string) => void;
+  onOpen: (event: FormEvent<HTMLFormElement>) => void;
+  onDelete: (photoId: string) => void;
+}) {
+  return (
+    <section className="storybook-section">
+      <article className="storybook-card access-card">
+        <p className="storybook-overline">Moderator</p>
+        <h2>Open cleanup manager</h2>
+        <p className="storybook-copy">
+          Use the separate moderator PIN to review or delete uploaded photos without signing in.
+        </p>
+        <form className="storybook-form" onSubmit={onOpen}>
+          <label className="storybook-field">
+            <span>Event code</span>
+            <input value={eventCode} onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())} />
+          </label>
+          <label className="storybook-field">
+            <span>Moderator PIN</span>
+            <input value={moderatorPin} onChange={(event) => onPinChange(event.target.value)} />
+          </label>
+          <button className="storybook-button storybook-button-primary" disabled={busy} type="submit">
+            {busy ? "Opening..." : "Open manager"}
+          </button>
+        </form>
+        <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
+      </article>
+
+      {photos.length > 0 ? (
+        <article className="storybook-card photos-card">
+          <div className="photos-card-heading">
+            <div>
+              <h2>Uploaded photos</h2>
+              <p className="storybook-copy">Delete any image that should not remain in the birthday album.</p>
+            </div>
+          </div>
+          <div className="admin-photo-grid">
+            {photos.map((photo) => (
+              <article className="admin-photo-card" key={photo.id}>
+                <div className="admin-photo-frame">
+                  {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                </div>
+                <div className="admin-photo-meta">
+                  <strong>{photo.title}</strong>
+                  <span>{photo.subtitle}</span>
+                </div>
+                <button
+                  className="storybook-button storybook-button-danger"
+                  disabled={deleteBusyId === photo.id}
+                  onClick={() => onDelete(photo.id)}
+                  type="button"
+                >
+                  {deleteBusyId === photo.id ? "Deleting..." : "Delete photo"}
+                </button>
+              </article>
+            ))}
+          </div>
+        </article>
+      ) : null}
+    </section>
+  );
+}
+
 function StorybookShell({
   children,
   guestHref,
@@ -911,6 +1004,10 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const [adminSettings, setAdminSettings] = useState<StorySettingsRecord | null>(null);
   const [adminSections, setAdminSections] = useState<StorySectionRecord[]>([]);
   const [adminPhotos, setAdminPhotos] = useState<AdminPhoto[]>([]);
+  const [moderatorPin, setModeratorPin] = useState("");
+  const [moderatorBusy, setModeratorBusy] = useState(false);
+  const [moderatorDeleteBusyId, setModeratorDeleteBusyId] = useState<string | null>(null);
+  const [moderatorPhotos, setModeratorPhotos] = useState<ModeratorPhoto[]>([]);
 
   useEffect(() => {
     if (!hasSupabaseClientEnv) return;
@@ -1165,6 +1262,75 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "Authentication failed." });
     } finally {
       setAuthBusy(false);
+    }
+  }
+
+  async function handleModeratorOpen(eventForm: FormEvent<HTMLFormElement>) {
+    eventForm.preventDefault();
+    if (!hasSupabaseClientEnv) {
+      setNotice({ tone: "error", message: "Supabase env vars are required for moderator access." });
+      return;
+    }
+    if (!adminEventCode || !moderatorPin) {
+      setNotice({ tone: "error", message: "Enter the event code and moderator PIN." });
+      return;
+    }
+
+    setModeratorBusy(true);
+    try {
+      const response = await fetch(`${functionsBaseUrl}/moderator-gallery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_code: adminEventCode.trim().toUpperCase(),
+          moderator_pin: moderatorPin.trim(),
+        }),
+      });
+      const data = (await response.json()) as ModeratorGalleryResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to open moderator manager.");
+      }
+      setModeratorPhotos(
+        data.photos.map((photo) => ({
+          id: photo.id,
+          title: photo.title,
+          subtitle: photo.subtitle,
+          imageUrl: photo.image_url,
+          status: photo.status,
+        })),
+      );
+      setNotice({ tone: "success", message: `Loaded ${data.photos.length} photos for moderation.` });
+    } catch (error) {
+      setModeratorPhotos([]);
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Moderator access failed." });
+    } finally {
+      setModeratorBusy(false);
+    }
+  }
+
+  async function handleModeratorDelete(photoId: string) {
+    if (!hasSupabaseClientEnv) return;
+    setModeratorDeleteBusyId(photoId);
+    try {
+      const response = await fetch(`${functionsBaseUrl}/moderator-delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_code: adminEventCode.trim().toUpperCase(),
+          moderator_pin: moderatorPin.trim(),
+          photo_id: photoId,
+        }),
+      });
+      const data = (await response.json()) as ModeratorDeleteResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Unable to delete photo.");
+      }
+      setModeratorPhotos((current) => current.filter((photo) => photo.id !== data.photo_id));
+      setNotice({ tone: "success", message: "Photo deleted." });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Delete failed." });
+    } finally {
+      setModeratorDeleteBusyId(null);
     }
   }
 
@@ -1486,6 +1652,21 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           sections={adminSections}
           session={session}
           settings={adminSettings}
+        />
+      ) : null}
+
+      {currentScreen === "moderator" ? (
+        <ModeratorPage
+          busy={moderatorBusy}
+          deleteBusyId={moderatorDeleteBusyId}
+          eventCode={adminEventCode}
+          moderatorPin={moderatorPin}
+          notice={notice}
+          onDelete={handleModeratorDelete}
+          onEventCodeChange={setAdminEventCode}
+          onOpen={handleModeratorOpen}
+          onPinChange={setModeratorPin}
+          photos={moderatorPhotos}
         />
       ) : null}
 
