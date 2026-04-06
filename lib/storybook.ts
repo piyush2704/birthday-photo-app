@@ -3,6 +3,7 @@ import type {
   GuestGalleryPhoto,
   PhotoCard,
   StorySectionCard,
+  StorySectionRecord,
   StorySettingsRecord,
 } from "./types";
 
@@ -120,6 +121,66 @@ export function buildDefaultSectionSeed(index: number, grouping: "month" | "year
     story_text: "Write a short memory, milestone, or note to frame the photos in this chapter.",
     sort_order: order,
     visible: true,
+  };
+}
+
+export function buildFallbackStorySettings(event: EventRecord): StorySettingsRecord {
+  const birthDate = getDefaultBirthDate(event.public_code);
+  return {
+    event_id: event.id,
+    grouping: "month",
+    section_count: 12,
+    birth_date: birthDate,
+    cover_title: `${event.title} Timeline`,
+    cover_subtitle: "A chapter-by-chapter scrapbook from Vaayu's first year.",
+    updated_at: event.created_at,
+  };
+}
+
+export function buildFallbackStorySections(
+  event: EventRecord,
+  settings: StorySettingsRecord,
+): StorySectionCard[] {
+  return Array.from({ length: settings.section_count }, (_value, index) => {
+    const seed = buildDefaultSectionSeed(index, settings.grouping, settings.birth_date);
+    const baseSection: StorySectionRecord = {
+      id: `fallback-section-${index + 1}`,
+      event_id: event.id,
+      label: seed.label,
+      title: seed.title,
+      subtitle: seed.subtitle,
+      story_text: seed.story_text,
+      sort_order: seed.sort_order,
+      visible: seed.visible,
+      created_at: event.created_at,
+      updated_at: event.created_at,
+    };
+
+    return {
+      ...baseSection,
+      photos: [],
+    };
+  });
+}
+
+export function resolveStoryScaffold(
+  event: EventRecord,
+  settings: StorySettingsRecord | null,
+  sections: StorySectionCard[],
+) {
+  const nextSettings = settings || buildFallbackStorySettings(event);
+  const visibleSections = sections.filter((section) => section.visible !== false);
+
+  if (visibleSections.length > 0) {
+    return {
+      settings: nextSettings,
+      sections: visibleSections,
+    };
+  }
+
+  return {
+    settings: nextSettings,
+    sections: buildFallbackStorySections(event, nextSettings),
   };
 }
 

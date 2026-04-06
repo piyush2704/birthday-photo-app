@@ -30,6 +30,7 @@ import {
   getFileExtension,
   getDefaultBirthDate,
   groupPhotosByMonth,
+  resolveStoryScaffold,
 } from "../lib/storybook";
 import type {
   EventRecord,
@@ -1820,23 +1821,23 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
         }
 
         if (!active) return;
+        const nextSections = storyData.sections.map((section) => ({
+          id: section.id,
+          event_id: storyData.event.id,
+          label: section.label,
+          title: section.title,
+          subtitle: section.subtitle,
+          story_text: section.story_text,
+          sort_order: section.sort_order,
+          visible: section.visible,
+          created_at: storyData.event.created_at,
+          updated_at: storyData.event.created_at,
+          photos: section.photos.map(buildPhotoCardFromGuest),
+        }));
+        const scaffold = resolveStoryScaffold(storyData.event, storyData.settings, nextSections);
         setTimelineEvent(storyData.event);
-        setStorySettings(storyData.settings);
-        setStorySections(
-          storyData.sections.map((section) => ({
-            id: section.id,
-            event_id: storyData.event.id,
-            label: section.label,
-            title: section.title,
-            subtitle: section.subtitle,
-            story_text: section.story_text,
-            sort_order: section.sort_order,
-            visible: section.visible,
-            created_at: storyData.event.created_at,
-            updated_at: storyData.event.created_at,
-            photos: section.photos.map(buildPhotoCardFromGuest),
-          })),
-        );
+        setStorySettings(scaffold.settings);
+        setStorySections(scaffold.sections);
         setGalleryPhotos(galleryData.photos.map(buildPhotoCardFromGuest));
         setNotice({
           tone: "success",
