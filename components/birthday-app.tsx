@@ -1206,13 +1206,20 @@ function ModeratorPage({
 
   return (
     <section className="storybook-section">
-      <article className="storybook-card access-card">
-        <p className="storybook-overline">Moderator</p>
-        <h2>Open timeline manager</h2>
-        <p className="storybook-copy">
-          Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
-        </p>
-        <form className="storybook-form" onSubmit={onOpen}>
+      <article className="moderator-entry-shell">
+        <div className="moderator-dashboard-header">
+          <div className="moderator-dashboard-brand">
+            <div className="moderator-dashboard-mark" aria-hidden="true">
+              <span />
+            </div>
+            <div>
+              <h2>Moderator Dashboard</h2>
+              <p>Manage Vaayu&apos;s storybook</p>
+            </div>
+          </div>
+          <div className="moderator-dashboard-star" aria-hidden="true">✦</div>
+        </div>
+        <form className="moderator-entry-form" onSubmit={onOpen}>
           <label className="storybook-field">
             <span>Event code</span>
             <input value={eventCode} onChange={(event) => onEventCodeChange(event.target.value.toUpperCase())} />
@@ -1225,6 +1232,9 @@ function ModeratorPage({
             {busy ? "Opening..." : "Open manager"}
           </button>
         </form>
+        <p className="storybook-copy moderator-entry-copy">
+          Use the separate moderator PIN to manage Vaayu&apos;s monthly timeline, upload chapter photos, and clean up the gallery without signing in.
+        </p>
         <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
       </article>
 
@@ -1624,19 +1634,15 @@ function StorybookShell({
           ))}
           {adminVisible ? (
             <Link
-              className={`storybook-admin-link ${currentScreen === "admin" ? "storybook-admin-link-active" : ""}`}
-              href="/admin"
-              title="Admin"
+              className={`storybook-admin-link ${currentScreen === "moderator" ? "storybook-admin-link-active" : ""}`}
+              href="/moderator"
+              title="Moderator"
             >
               ⚙
             </Link>
           ) : null}
         </nav>
       </header>
-
-      <div className="storybook-status">
-        <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
-      </div>
 
       {children}
     </main>
