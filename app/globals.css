@@ -40,6 +40,59 @@ body {
   color: var(--ink);
 }
 
+.storybook-global-decor {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.storybook-orbit {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  opacity: 0.18;
+  filter: blur(0.2px);
+}
+
+.storybook-orbit-global {
+  top: 104px;
+  right: -32px;
+}
+
+.storybook-orbit-global-secondary {
+  bottom: 72px;
+  left: -46px;
+  width: 180px;
+  height: 180px;
+  opacity: 0.14;
+}
+
+.storybook-orbit-story-a {
+  top: 220px;
+  left: 5%;
+  width: 170px;
+  height: 170px;
+  opacity: 0.13;
+}
+
+.storybook-orbit-story-b {
+  top: 760px;
+  right: 6%;
+  width: 210px;
+  height: 210px;
+  opacity: 0.11;
+}
+
+.storybook-orbit-story-c {
+  bottom: 180px;
+  left: 12%;
+  width: 190px;
+  height: 190px;
+  opacity: 0.12;
+}
+
 .storybook-header,
 .storybook-section {
   position: relative;
@@ -103,6 +156,11 @@ body {
 .storybook-sun-rays {
   transform-origin: 120px 120px;
   animation: storybookSunSpin 18s linear infinite;
+}
+
+.storybook-orbit-group {
+  transform-origin: 130px 130px;
+  animation: storybookOrbitSpin 24s linear infinite;
 }
 
 .storybook-brand strong,
@@ -2543,6 +2601,16 @@ body {
   }
 }
 
+@keyframes storybookOrbitSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (min-width: 640px) {
   .gallery-package-grid {
     column-count: 3;
@@ -2606,6 +2674,23 @@ body {
 @media (max-width: 720px) {
   .storybook-app-shell {
     padding-top: 96px;
+  }
+
+  .storybook-orbit {
+    width: 150px;
+    height: 150px;
+  }
+
+  .storybook-orbit-global {
+    top: 120px;
+    right: -38px;
+  }
+
+  .storybook-orbit-global-secondary {
+    bottom: 96px;
+    left: -42px;
+    width: 132px;
+    height: 132px;
   }
 
   .storybook-header {
@@ -2727,6 +2812,12 @@ body {
 
   .loading-card {
     padding: 22px 18px;
+  }
+
+  .storybook-orbit-story-a,
+  .storybook-orbit-story-b,
+  .storybook-orbit-story-c {
+    display: none;
   }
 
   .loading-visual,

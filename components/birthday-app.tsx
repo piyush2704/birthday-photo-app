@@ -302,6 +302,73 @@ function BrandSunMark() {
   );
 }
 
+function OrbitSunEarth({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 260 260"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="130"
+        cy="130"
+        r="84"
+        stroke="#D8D8D8"
+        strokeDasharray="5 7"
+        strokeWidth="2.5"
+      />
+
+      <g>
+        <circle cx="130" cy="130" fill="#FFC83D" r="30" />
+        <circle cx="120" cy="119" fill="#FFE7A3" opacity="0.75" r="8" />
+
+        <g stroke="#FFB800" strokeLinecap="round" strokeWidth="4.5">
+          <line x1="130" x2="130" y1="82" y2="66" />
+          <line x1="130" x2="130" y1="194" y2="178" />
+          <line x1="82" x2="66" y1="130" y2="130" />
+          <line x1="194" x2="178" y1="130" y2="130" />
+          <line x1="96" x2="84" y1="96" y2="84" />
+          <line x1="164" x2="176" y1="164" y2="176" />
+          <line x1="96" x2="84" y1="164" y2="176" />
+          <line x1="164" x2="176" y1="96" y2="84" />
+        </g>
+      </g>
+
+      <g className="storybook-orbit-group">
+        <g transform="translate(214 130)">
+          <circle cx="0" cy="0" fill="#4DA6FF" r="19" />
+          <path
+            d="M -2 -11 C 2 -12, 7 -11, 9 -8 C 11 -6, 10 -3, 8 -2 C 7 -1, 6 1, 7 3 C 8 6, 7 9, 4 11 C 2 12, 0 10, -1 8 C -2 6, -3 4, -5 3 C -7 2, -8 0, -7 -2 C -6 -4, -5 -5, -4 -7 C -4 -9, -3 -10, -2 -11 Z"
+            fill="#58B95A"
+          />
+          <path
+            d="M -10 -1 C -8 -2, -6 -1, -6 1 C -6 3, -7 4, -8 6 C -8 8, -7 10, -8 12 C -9 13, -11 12, -11 10 C -11 8, -12 6, -12 4 C -12 2, -11 0, -10 -1 Z"
+            fill="#58B95A"
+          />
+          <path
+            d="M 2 -14 C 4 -15, 6 -14, 6 -12 C 5 -11, 3 -10, 1 -11 C 0 -12, 0 -13, 2 -14 Z"
+            fill="#58B95A"
+          />
+          <path
+            d="M 9 8 C 11 8, 12 9, 12 11 C 11 12, 9 13, 7 12 C 6 11, 7 9, 9 8 Z"
+            fill="#58B95A"
+          />
+          <circle cx="12" cy="2" fill="#58B95A" r="1.1" />
+          <circle cx="-13" cy="8" fill="#58B95A" r="1.2" />
+          <ellipse cx="0" cy="-15" fill="#EAF6FF" opacity="0.55" rx="5" ry="2" />
+          <circle cx="-6" cy="-7" fill="white" opacity="0.22" r="4" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 function getScreen(pathname: string): ScreenKey {
   return screenMap.get(pathname) || "legacy";
 }
@@ -1923,6 +1990,17 @@ function StorybookShell({
 
   return (
     <main className="storybook-app-shell">
+      <div className="storybook-global-decor" aria-hidden="true">
+        <OrbitSunEarth className="storybook-orbit storybook-orbit-global" />
+        <OrbitSunEarth className="storybook-orbit storybook-orbit-global-secondary" />
+        {currentScreen === "timeline" ? (
+          <>
+            <OrbitSunEarth className="storybook-orbit storybook-orbit-story-a" />
+            <OrbitSunEarth className="storybook-orbit storybook-orbit-story-b" />
+            <OrbitSunEarth className="storybook-orbit storybook-orbit-story-c" />
+          </>
+        ) : null}
+      </div>
       <header className="storybook-header">
         <Link className="storybook-brand" href={guestHref("/")}>
           <BrandSunMark />
