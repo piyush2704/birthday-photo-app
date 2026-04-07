@@ -369,6 +369,51 @@ function OrbitSunEarth({
   );
 }
 
+function MoonStars({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 200 140"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g className="storybook-moon-float">
+        <circle cx="52" cy="62" fill="#DDE3F3" r="22" />
+        <path
+          d="M66 43C60 39 51 38 43 41C31 46 25 58 27 69C29 81 39 90 51 92C60 93 68 90 73 85C67 87 61 87 55 85C43 83 35 75 33 65C31 56 34 47 41 41C48 36 58 35 66 43Z"
+          fill="#F5F7FD"
+        />
+        <circle cx="44" cy="56" fill="#C8D0E6" opacity="0.45" r="3.2" />
+        <circle cx="42" cy="72" fill="#C8D0E6" opacity="0.4" r="4.4" />
+        <circle cx="57" cy="76" fill="#C8D0E6" opacity="0.45" r="2.8" />
+      </g>
+
+      <g className="storybook-star storybook-star-1">
+        <path d="M112 28V40" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.4" />
+        <path d="M106 34H118" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.4" />
+      </g>
+
+      <g className="storybook-star storybook-star-2">
+        <path d="M152 50V62" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.4" />
+        <path d="M146 56H158" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.4" />
+      </g>
+
+      <g className="storybook-star storybook-star-3">
+        <path d="M132 92V102" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.2" />
+        <path d="M127 97H137" stroke="#D8C27A" strokeLinecap="round" strokeWidth="2.2" />
+      </g>
+
+      <circle className="storybook-star storybook-star-4" cx="170" cy="30" fill="#E3CF92" r="2.2" />
+      <circle className="storybook-star storybook-star-5" cx="164" cy="88" fill="#E3CF92" r="2.4" />
+    </svg>
+  );
+}
+
 function getScreen(pathname: string): ScreenKey {
   return screenMap.get(pathname) || "legacy";
 }
@@ -1993,11 +2038,15 @@ function StorybookShell({
       <div className="storybook-global-decor" aria-hidden="true">
         <OrbitSunEarth className="storybook-orbit storybook-orbit-global" />
         <OrbitSunEarth className="storybook-orbit storybook-orbit-global-secondary" />
+        <MoonStars className="storybook-moon-stars storybook-moon-stars-global" />
+        <MoonStars className="storybook-moon-stars storybook-moon-stars-global-secondary" />
         {currentScreen === "timeline" ? (
           <>
             <OrbitSunEarth className="storybook-orbit storybook-orbit-story-a" />
             <OrbitSunEarth className="storybook-orbit storybook-orbit-story-b" />
             <OrbitSunEarth className="storybook-orbit storybook-orbit-story-c" />
+            <MoonStars className="storybook-moon-stars storybook-moon-stars-story-a" />
+            <MoonStars className="storybook-moon-stars storybook-moon-stars-story-b" />
           </>
         ) : null}
       </div>
