@@ -244,19 +244,60 @@ function HeaderIcon({
   );
 }
 
-function BrandMoonMark() {
+function BrandSunMark() {
   return (
     <span className="storybook-brand-mark" aria-hidden="true">
       <span className="storybook-brand-mark-inner">
-        <svg height="20" viewBox="0 0 32 32" width="20">
-          <path
-            d="M22 16 A10 10 0 1 1 12 6 A7 7 0 0 0 22 16 Z"
-            fill="#7BA7BE"
-            opacity="0.9"
-          />
+        <svg height="20" viewBox="0 0 240 240" width="20" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient
+              cx="0"
+              cy="0"
+              gradientTransform="translate(120 120) rotate(90) scale(60)"
+              gradientUnits="userSpaceOnUse"
+              id="sunCore"
+              r="1"
+            >
+              <stop offset="0%" stopColor="#FFE9A8" />
+              <stop offset="60%" stopColor="#FFD76A" />
+              <stop offset="100%" stopColor="#FFBE3D" />
+            </radialGradient>
+
+            <filter height="200%" id="glow" width="200%" x="-50%" y="-50%">
+              <feGaussianBlur result="blur" stdDeviation="6" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g className="storybook-sun-rays">
+            {Array.from({ length: 12 }).map((_, index) => {
+              const angle = index * 30;
+              const innerX = 120 + Math.cos((angle * Math.PI) / 180) * 64;
+              const innerY = 120 + Math.sin((angle * Math.PI) / 180) * 64;
+              const outerX = 120 + Math.cos((angle * Math.PI) / 180) * 94;
+              const outerY = 120 + Math.sin((angle * Math.PI) / 180) * 94;
+
+              return (
+                <line
+                  key={angle}
+                  stroke="#FFC84F"
+                  strokeLinecap="round"
+                  strokeWidth="10"
+                  x1={innerX}
+                  x2={outerX}
+                  y1={innerY}
+                  y2={outerY}
+                />
+              );
+            })}
+          </g>
+          <circle cx="120" cy="120" fill="url(#sunCore)" filter="url(#glow)" r="52" />
+          <circle cx="120" cy="120" fill="#FFF4C7" opacity="0.45" r="26" />
         </svg>
       </span>
-      <span className="storybook-brand-mark-spark" />
     </span>
   );
 }
@@ -1884,7 +1925,7 @@ function StorybookShell({
     <main className="storybook-app-shell">
       <header className="storybook-header">
         <Link className="storybook-brand" href={guestHref("/")}>
-          <BrandMoonMark />
+          <BrandSunMark />
           <span className="storybook-brand-copy">
             <strong>Vaayu</strong>
             <small>His First Year</small>

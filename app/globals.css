@@ -96,14 +96,13 @@ body {
   background: linear-gradient(135deg, #eaf2f8, #dce9f0);
 }
 
-.storybook-brand-mark-spark {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  top: 2px;
-  right: 1px;
-  background: #c9a96e;
-  clip-path: polygon(50% 0%, 60% 35%, 100% 50%, 60% 65%, 50% 100%, 40% 65%, 0% 50%, 40% 35%);
+.storybook-brand-mark svg {
+  overflow: visible;
+}
+
+.storybook-sun-rays {
+  transform-origin: 120px 120px;
+  animation: storybookSunSpin 18s linear infinite;
 }
 
 .storybook-brand strong,
@@ -2531,6 +2530,16 @@ body {
 
   to {
     background-position: -200% 0, 0 0;
+  }
+}
+
+@keyframes storybookSunSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
   }
 }
 
