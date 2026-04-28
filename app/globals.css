@@ -2528,7 +2528,7 @@ body {
 .lightbox-shell {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 120;
   display: grid;
   place-items: center;
   background: rgba(18, 12, 9, 0.8);

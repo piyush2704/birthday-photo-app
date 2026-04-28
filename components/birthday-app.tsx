@@ -525,6 +525,7 @@ function MediaFrame({
   controls = false,
   muted = true,
   loop = false,
+  thumbnailMode = false,
 }: {
   photo: Pick<PhotoCard, "imageUrl" | "fullImageUrl" | "mediaType" | "title">;
   className?: string;
@@ -533,6 +534,7 @@ function MediaFrame({
   controls?: boolean;
   muted?: boolean;
   loop?: boolean;
+  thumbnailMode?: boolean;
 }) {
   const src = photo.imageUrl || photo.fullImageUrl || "";
   if (!src) {
@@ -540,15 +542,18 @@ function MediaFrame({
   }
 
   if (photo.mediaType === "video") {
+    const shouldAutoPlay = autoPlay || thumbnailMode;
+    const shouldLoop = loop || thumbnailMode;
+    const shouldMute = thumbnailMode ? true : muted;
     return (
       <video
         className={className}
         controls={controls}
-        loop={loop}
-        muted={muted}
+        loop={shouldLoop}
+        muted={shouldMute}
         playsInline
-        preload="metadata"
-        {...(autoPlay ? { autoPlay: true } : {})}
+        preload={thumbnailMode ? "auto" : "metadata"}
+        {...(shouldAutoPlay ? { autoPlay: true } : {})}
       >
         <source src={src} />
       </video>
@@ -813,7 +818,7 @@ function StoryTimelinePage({
                       type="button"
                     >
                       <div className="timeline-editorial-photo-frame">
-                        <MediaFrame photo={featuredPhoto} />
+                        <MediaFrame photo={featuredPhoto} thumbnailMode />
                       </div>
                     </button>
                   ) : (
@@ -832,7 +837,7 @@ function StoryTimelinePage({
                           onClick={() => openTimelineLightbox(section.photos, photo.id)}
                           type="button"
                         >
-                          <MediaFrame photo={photo} />
+                          <MediaFrame photo={photo} thumbnailMode />
                         </button>
                       ))}
                     </div>
@@ -1090,7 +1095,7 @@ function GalleryPage({
                       type="button"
                     >
                       <div className="gallery-package-card-media">
-                        {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
+                        {photo.imageUrl ? <MediaFrame photo={photo} thumbnailMode /> : <span />}
                       </div>
                       <div className="gallery-package-card-overlay">
                         <span>{group.label}</span>
@@ -1531,6 +1536,7 @@ function AdminPage({
                     {photo.imageUrl ? (
                       <MediaFrame
                         alt={photo.caption || "Photo"}
+                        thumbnailMode
                         photo={{
                           title: photo.caption || "Photo",
                           imageUrl: photo.imageUrl,
@@ -1837,7 +1843,7 @@ function ModeratorPage({
                 {photos.map((photo) => (
                   <article className="admin-photo-card moderator-photo-card" key={photo.id}>
                     <div className="admin-photo-frame">
-                      {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
+                      {photo.imageUrl ? <MediaFrame photo={photo} thumbnailMode /> : <span />}
                       {!photo.isVisible ? <div className="moderator-photo-hidden">Hidden</div> : null}
                       {photo.status === "pending" ? <div className="moderator-photo-pending">Pending</div> : null}
                     </div>
@@ -1962,7 +1968,7 @@ function ModeratorPage({
                       {(photosBySection.find((item) => item.id === section.id)?.items || []).map((photo) => (
                         <article className="moderator-polaroid" key={photo.id}>
                           <div className="moderator-polaroid-frame">
-                            {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
+                            {photo.imageUrl ? <MediaFrame photo={photo} thumbnailMode /> : <span />}
                           </div>
                           <div className="moderator-polaroid-meta">
                             <strong>{formatMonthYear(photo.capturedAt)}</strong>
