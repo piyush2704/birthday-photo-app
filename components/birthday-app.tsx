@@ -91,8 +91,8 @@ type ModeratorPhoto = {
 };
 
 const screenMap = new Map<string, ScreenKey>([
-  ["/", "timeline"],
-  ["/timeline", "timeline"],
+  ["/", "gallery"],
+  ["/timeline", "gallery"],
   ["/gallery", "gallery"],
   ["/upload", "upload"],
   ["/admin", "admin"],
@@ -2028,7 +2028,6 @@ function StorybookShell({
   adminVisible: boolean;
 }) {
   const tabs = [
-    { key: "timeline", href: guestHref("/"), label: "Story", icon: "story" },
     { key: "gallery", href: guestHref("/gallery"), label: "Gallery", icon: "gallery" },
     { key: "upload", href: guestHref("/upload"), label: "Upload", icon: "upload" },
   ] as const;
