@@ -703,10 +703,15 @@ body {
 }
 
 .timeline-photo-card img,
+.timeline-photo-card video,
 .gallery-card-media img,
+.gallery-card-media video,
 .upload-preview-card img,
+.upload-preview-card video,
 .admin-photo-frame img,
-.lightbox-frame img {
+.admin-photo-frame video,
+.lightbox-frame img,
+.lightbox-frame video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -985,7 +990,8 @@ body {
   background: #f3efe8;
 }
 
-.gallery-package-card-media img {
+.gallery-package-card-media img,
+.gallery-package-card-media video {
   width: 100%;
   height: 100%;
   display: block;
@@ -994,7 +1000,8 @@ body {
   transition: transform 0.5s ease;
 }
 
-.gallery-package-card:hover .gallery-package-card-media img {
+.gallery-package-card:hover .gallery-package-card-media img,
+.gallery-package-card:hover .gallery-package-card-media video {
   transform: scale(1.03);
 }
 
@@ -1397,6 +1404,7 @@ body {
 }
 
 .upload-preview-card img,
+.upload-preview-card video,
 .admin-photo-frame {
   border-radius: 18px;
 }
@@ -1530,7 +1538,8 @@ body {
   background: rgba(238, 227, 220, 0.85);
 }
 
-.moderator-polaroid-frame img {
+.moderator-polaroid-frame img,
+.moderator-polaroid-frame video {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -2148,7 +2157,9 @@ body {
 }
 
 .timeline-editorial-photo-frame img,
-.timeline-editorial-extra-photo img {
+.timeline-editorial-photo-frame video,
+.timeline-editorial-extra-photo img,
+.timeline-editorial-extra-photo video {
   width: 100%;
   display: block;
   object-fit: cover;
@@ -2156,7 +2167,8 @@ body {
   transition: transform 0.45s ease;
 }
 
-.timeline-editorial-photo-frame img {
+.timeline-editorial-photo-frame img,
+.timeline-editorial-photo-frame video {
   height: clamp(240px, 34vw, 420px);
 }
 
@@ -2289,7 +2301,9 @@ body {
 }
 
 .timeline-editorial-photo:hover .timeline-editorial-photo-frame img,
-.timeline-editorial-extra-photo:hover img {
+.timeline-editorial-photo:hover .timeline-editorial-photo-frame video,
+.timeline-editorial-extra-photo:hover img,
+.timeline-editorial-extra-photo:hover video {
   transform: scale(1.03);
 }
 
@@ -2529,7 +2543,8 @@ body {
   color: #fff8f1;
 }
 
-.lightbox-frame img {
+.lightbox-frame img,
+.lightbox-frame video {
   max-height: 80vh;
   border-radius: 24px;
   object-fit: contain;
@@ -4432,7 +4447,8 @@ img {
   box-shadow: 0 26px 80px rgba(0, 0, 0, 0.26);
 }
 
-.gallery-lightbox-frame img {
+.gallery-lightbox-frame img,
+.gallery-lightbox-frame video {
   width: 100%;
   max-height: 74vh;
   object-fit: contain;
@@ -4621,7 +4637,8 @@ img {
   background: linear-gradient(135deg, #fffaf7, #fff4ef);
 }
 
-.upload-preview-card img {
+.upload-preview-card img,
+.upload-preview-card video {
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;

@@ -5,6 +5,11 @@ type ModeratorGalleryRequest = {
   moderator_pin: string
 }
 
+function getMediaType(storagePath: string) {
+  const extension = storagePath.split(".").pop()?.toLowerCase() ?? ""
+  return ["mp4", "mov", "m4v", "webm", "ogg", "ogv"].includes(extension) ? "video" : "image"
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -96,6 +101,7 @@ Deno.serve(async (req) => {
 
     const urlMap = new Map<string, { thumbUrl: string | null; fullUrl: string | null }>()
     for (const photo of photos || []) {
+      const mediaType = getMediaType(photo.storage_path)
       const fullResult = await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600)
 
       if (fullResult.error) {
@@ -105,14 +111,17 @@ Deno.serve(async (req) => {
         )
       }
 
-      const thumbResult = await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
-        transform: {
-          width: 480,
-          height: 480,
-          resize: "cover",
-          quality: 72,
-        },
-      })
+      const thumbResult =
+        mediaType === "image"
+          ? await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
+              transform: {
+                width: 480,
+                height: 480,
+                resize: "cover",
+                quality: 72,
+              },
+            })
+          : { data: { signedUrl: fullResult.data?.signedUrl ?? null } }
 
       urlMap.set(photo.storage_path, {
         thumbUrl: thumbResult.data?.signedUrl ?? fullResult.data?.signedUrl ?? null,
@@ -136,6 +145,7 @@ Deno.serve(async (req) => {
           status: photo.status,
           image_url: urlMap.get(photo.storage_path)?.thumbUrl ?? null,
           full_image_url: urlMap.get(photo.storage_path)?.fullUrl ?? null,
+          media_type: getMediaType(photo.storage_path),
         })),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

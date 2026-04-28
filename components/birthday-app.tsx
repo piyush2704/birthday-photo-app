@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChangeEvent,
   FormEvent,
@@ -30,6 +30,8 @@ import {
   formatMonthYear,
   getFileExtension,
   getDefaultBirthDate,
+  getMediaTypeFromExtension,
+  getMediaTypeFromFile,
   groupPhotosByMonth,
   resolveStoryScaffold,
 } from "../lib/storybook";
@@ -38,6 +40,7 @@ import type {
   GuestGalleryResponse,
   GuestStoryResponse,
   GuestUploadResponse,
+  MediaType,
   ModeratorDeleteResponse,
   ModeratorStoryResponse,
   ModeratorUploadResponse,
@@ -70,11 +73,13 @@ type UploadPreview = {
   file: File;
   url: string;
   capturedAt: string;
+  mediaType: MediaType;
 };
 
 type AdminPhoto = PhotoRecord & {
   imageUrl: string | null;
   fullImageUrl?: string | null;
+  mediaType?: MediaType;
 };
 
 type ModeratorPhoto = {
@@ -83,6 +88,7 @@ type ModeratorPhoto = {
   subtitle: string;
   imageUrl: string | null;
   fullImageUrl: string | null;
+  mediaType: MediaType;
   status: string;
   capturedAt: string;
   isVisible: boolean;
@@ -447,6 +453,7 @@ function mapModeratorPhoto(photo: {
   subtitle: string;
   image_url: string | null;
   full_image_url?: string | null;
+  media_type?: MediaType;
   status: string;
   captured_at?: string;
   is_visible?: boolean;
@@ -459,6 +466,7 @@ function mapModeratorPhoto(photo: {
     subtitle: photo.subtitle,
     imageUrl: photo.image_url,
     fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+    mediaType: photo.media_type ?? "image",
     status: photo.status,
     capturedAt: photo.captured_at || new Date().toISOString(),
     isVisible: photo.is_visible ?? true,
@@ -488,6 +496,7 @@ function buildStorySectionsFromModerator(data: ModeratorStoryResponse): StorySec
         status: "approved",
         imageUrl: photo.image_url,
         fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+        mediaType: photo.media_type ?? "image",
         capturedAt: photo.captured_at || new Date().toISOString(),
       })),
   }));
@@ -503,8 +512,50 @@ function buildGalleryPhotosFromModerator(data: ModeratorStoryResponse): PhotoCar
       status: "approved",
       imageUrl: photo.image_url,
       fullImageUrl: photo.full_image_url ?? photo.image_url ?? null,
+      mediaType: photo.media_type ?? "image",
       capturedAt: photo.captured_at || new Date().toISOString(),
     }));
+}
+
+function MediaFrame({
+  photo,
+  className,
+  alt,
+  autoPlay = false,
+  controls = false,
+  muted = true,
+  loop = false,
+}: {
+  photo: Pick<PhotoCard, "imageUrl" | "fullImageUrl" | "mediaType" | "title">;
+  className?: string;
+  alt?: string;
+  autoPlay?: boolean;
+  controls?: boolean;
+  muted?: boolean;
+  loop?: boolean;
+}) {
+  const src = photo.imageUrl || photo.fullImageUrl || "";
+  if (!src) {
+    return <span />;
+  }
+
+  if (photo.mediaType === "video") {
+    return (
+      <video
+        className={className}
+        controls={controls}
+        loop={loop}
+        muted={muted}
+        playsInline
+        preload="metadata"
+        {...(autoPlay ? { autoPlay: true } : {})}
+      >
+        <source src={src} />
+      </video>
+    );
+  }
+
+  return <img alt={alt || photo.title} className={className} src={src} />;
 }
 
 function normalizePin(value: string) {
@@ -762,7 +813,7 @@ function StoryTimelinePage({
                       type="button"
                     >
                       <div className="timeline-editorial-photo-frame">
-                        <img alt={featuredPhoto.title} src={featuredPhoto.imageUrl} />
+                        <MediaFrame photo={featuredPhoto} />
                       </div>
                     </button>
                   ) : (
@@ -781,7 +832,7 @@ function StoryTimelinePage({
                           onClick={() => openTimelineLightbox(section.photos, photo.id)}
                           type="button"
                         >
-                          <img alt={photo.title} src={photo.imageUrl || ""} />
+                          <MediaFrame photo={photo} />
                         </button>
                       ))}
                     </div>
@@ -868,7 +919,7 @@ function Lightbox({
   return (
     <div className="lightbox-shell" onClick={onClose} role="dialog" aria-modal="true">
       <button
-        aria-label="Close image viewer"
+        aria-label="Close media viewer"
         className="lightbox-close"
         onClick={onClose}
         type="button"
@@ -876,7 +927,7 @@ function Lightbox({
         ×
       </button>
       <button
-        aria-label="Previous image"
+        aria-label="Previous media"
         className="lightbox-nav lightbox-nav-left"
         onClick={(event) => {
           event.stopPropagation();
@@ -888,7 +939,14 @@ function Lightbox({
       </button>
       <figure className="lightbox-frame" onClick={(event) => event.stopPropagation()}>
         {active.fullImageUrl || active.imageUrl ? (
-          <img alt={active.title} src={active.fullImageUrl || active.imageUrl || ""} />
+          <MediaFrame
+            alt={active.title}
+            autoPlay={active.mediaType === "video"}
+            controls={active.mediaType === "video"}
+            loop={active.mediaType === "video"}
+            muted={false}
+            photo={{ ...active, imageUrl: active.fullImageUrl || active.imageUrl }}
+          />
         ) : null}
         <figcaption>
           <div>
@@ -912,7 +970,7 @@ function Lightbox({
         </figcaption>
       </figure>
       <button
-        aria-label="Next image"
+        aria-label="Next media"
         className="lightbox-nav lightbox-nav-right"
         onClick={(event) => {
           event.stopPropagation();
@@ -1032,7 +1090,7 @@ function GalleryPage({
                       type="button"
                     >
                       <div className="gallery-package-card-media">
-                        {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                        {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
                       </div>
                       <div className="gallery-package-card-overlay">
                         <span>{group.label}</span>
@@ -1108,7 +1166,7 @@ function UploadPage({
           <div className="upload-package-icon" aria-hidden="true">
             <span />
           </div>
-          <h1>Share a Photo</h1>
+          <h1>Share Photos or Videos</h1>
           <p>Add to Vaayu&apos;s memory collection. We&apos;ll detect the month automatically.</p>
         </div>
 
@@ -1140,12 +1198,12 @@ function UploadPage({
           </div>
 
           <label className="upload-package-dropzone">
-            <input accept="image/*" multiple onChange={onFilesSelected} type="file" />
+            <input accept="image/*,video/*" multiple onChange={onFilesSelected} type="file" />
             <div className="upload-package-dropzone-icon">+</div>
             <p>
               <strong>Click to upload</strong> or drag &amp; drop
             </p>
-            <small>JPG, PNG - capture date detected automatically</small>
+            <small>JPG, PNG, MP4, MOV - capture date detected automatically when available</small>
           </label>
 
           {isReady ? (
@@ -1154,7 +1212,17 @@ function UploadPage({
                 {previews.map((preview) => (
                   <article className="upload-package-preview" key={preview.id}>
                     <div className="upload-package-preview-frame">
-                      <img alt={preview.file.name} src={preview.url} />
+                      <MediaFrame
+                        alt={preview.file.name}
+                        autoPlay={preview.mediaType === "video"}
+                        loop={preview.mediaType === "video"}
+                        photo={{
+                          title: preview.file.name,
+                          imageUrl: preview.url,
+                          fullImageUrl: preview.url,
+                          mediaType: preview.mediaType,
+                        }}
+                      />
                     </div>
                     <div className="upload-package-preview-tag">
                       {formatMonthYear(preview.capturedAt)}
@@ -1171,21 +1239,21 @@ function UploadPage({
               </div>
 
               <div className="upload-package-summary">
-                ✦ {previews.length} photo{previews.length !== 1 ? "s" : ""} ready to upload - capture dates detected from photo metadata
+                ✦ {previews.length} file{previews.length !== 1 ? "s" : ""} ready to upload - capture dates detected automatically when available
               </div>
             </div>
           ) : null}
 
           <button className="upload-package-submit" disabled={busy || !isReady} type="submit">
-            {busy ? "Submitting..." : `Submit ${previews.length || ""} Photo${previews.length === 1 ? "" : previews.length > 1 ? "s" : ""}`}
+            {busy ? "Submitting..." : `Submit ${previews.length || ""} File${previews.length === 1 ? "" : previews.length > 1 ? "s" : ""}`}
           </button>
 
           <div className="upload-package-info">
             <p className="upload-package-info-title">A few things to know</p>
             <ul>
               <li>Your photos are grouped by the date they were taken</li>
-              <li>They appear in Vaayu&apos;s album as soon as the upload completes</li>
-              <li>You can upload multiple photos at once</li>
+              <li>Photos and videos appear in Vaayu&apos;s album as soon as the upload completes</li>
+              <li>You can upload multiple photos or short videos at once</li>
               <li>Clear, well-lit photos look most beautiful in the gallery</li>
             </ul>
             <p className={`inline-notice inline-notice-${notice.tone}`}>{notice.message}</p>
@@ -1460,11 +1528,21 @@ function AdminPage({
               {photos.map((photo) => (
                 <article className="admin-photo-card" key={photo.id}>
                   <div className="admin-photo-frame">
-                    {photo.imageUrl ? <img alt={photo.caption || "Photo"} src={photo.imageUrl} /> : <span />}
+                    {photo.imageUrl ? (
+                      <MediaFrame
+                        alt={photo.caption || "Photo"}
+                        photo={{
+                          title: photo.caption || "Photo",
+                          imageUrl: photo.imageUrl,
+                          fullImageUrl: photo.fullImageUrl ?? photo.imageUrl,
+                          mediaType: photo.mediaType ?? "image",
+                        }}
+                      />
+                    ) : <span />}
                   </div>
                   <div className="admin-photo-meta">
                     <strong>{formatMonthYear(photo.captured_at ?? photo.created_at)}</strong>
-                    <span>{photo.caption || "Gallery photo"}</span>
+                    <span>{photo.caption || "Gallery item"}</span>
                   </div>
                   <div className="admin-photo-controls">
                     <label className="storybook-field">
@@ -1759,7 +1837,7 @@ function ModeratorPage({
                 {photos.map((photo) => (
                   <article className="admin-photo-card moderator-photo-card" key={photo.id}>
                     <div className="admin-photo-frame">
-                      {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                      {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
                       {!photo.isVisible ? <div className="moderator-photo-hidden">Hidden</div> : null}
                       {photo.status === "pending" ? <div className="moderator-photo-pending">Pending</div> : null}
                     </div>
@@ -1884,7 +1962,7 @@ function ModeratorPage({
                       {(photosBySection.find((item) => item.id === section.id)?.items || []).map((photo) => (
                         <article className="moderator-polaroid" key={photo.id}>
                           <div className="moderator-polaroid-frame">
-                            {photo.imageUrl ? <img alt={photo.title} src={photo.imageUrl} /> : <span />}
+                            {photo.imageUrl ? <MediaFrame photo={photo} /> : <span />}
                           </div>
                           <div className="moderator-polaroid-meta">
                             <strong>{formatMonthYear(photo.capturedAt)}</strong>
@@ -1908,16 +1986,26 @@ function ModeratorPage({
 
                     <div className="moderator-upload-composer">
                       <label className="upload-dropzone moderator-upload-dropzone">
-                        <input accept="image/*" multiple onChange={(eventField) => onSectionFilesSelected(section.id, eventField)} type="file" />
-                        <span>Upload chapter photos</span>
-                        <small>These images will appear as printed-photo thumbnails in the timeline.</small>
+                        <input accept="image/*,video/*" multiple onChange={(eventField) => onSectionFilesSelected(section.id, eventField)} type="file" />
+                        <span>Upload chapter media</span>
+                        <small>Photos and videos added here can appear as printed keepsakes in the timeline.</small>
                       </label>
 
                       {(draftUploads[section.id] || []).length > 0 ? (
                         <div className="upload-preview-grid moderator-preview-grid">
                           {(draftUploads[section.id] || []).map((preview) => (
                             <article className="upload-preview-card" key={preview.id}>
-                              <img alt={preview.file.name} src={preview.url} />
+                              <MediaFrame
+                                alt={preview.file.name}
+                                autoPlay={preview.mediaType === "video"}
+                                loop={preview.mediaType === "video"}
+                                photo={{
+                                  title: preview.file.name,
+                                  imageUrl: preview.url,
+                                  fullImageUrl: preview.url,
+                                  mediaType: preview.mediaType,
+                                }}
+                              />
                               <div>
                                 <strong>{preview.file.name}</strong>
                                 <span>{formatMonthYear(preview.capturedAt)}</span>
@@ -2050,7 +2138,7 @@ function StorybookShell({
         ) : null}
       </div>
       <header className="storybook-header">
-        <Link className="storybook-brand" href={guestHref("/")}>
+        <Link className="storybook-brand" href={guestHref("/gallery")}>
           <BrandSunMark />
           <span className="storybook-brand-copy">
             <strong>Vaayu</strong>
@@ -2090,6 +2178,7 @@ function StorybookShell({
 export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const currentScreen = getScreen(pathname);
 
   const [session, setSession] = useState<Session | null>(null);
@@ -2160,17 +2249,26 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const eventCode = params.get("event");
-    const pin = params.get("pin");
-    if (!eventCode && !pin) return;
-    setGuestAccess({
-      eventCode: (eventCode || "").toUpperCase(),
-      pin: pin || "",
-    });
-    setAdminEventCode((eventCode || "").toUpperCase());
-  }, []);
+    const eventCode = searchParams.get("event");
+    const pin = searchParams.get("pin");
+
+    if (!eventCode && !pin) {
+      setGuestAccess((current) =>
+        current.eventCode || current.pin ? { eventCode: "", pin: "" } : current,
+      );
+      return;
+    }
+
+    const normalizedEventCode = (eventCode || "").toUpperCase();
+    const normalizedPin = pin || "";
+
+    setGuestAccess((current) =>
+      current.eventCode === normalizedEventCode && current.pin === normalizedPin
+        ? current
+        : { eventCode: normalizedEventCode, pin: normalizedPin },
+    );
+    setAdminEventCode(normalizedEventCode);
+  }, [searchParams]);
 
   useEffect(() => {
     return () => {
@@ -2281,7 +2379,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       setNotice({ tone: "error", message: "Add the event code and PIN to continue." });
       return;
     }
-    router.push(guestHref(pathname === "/admin" ? "/" : pathname));
+    router.push(guestHref(currentScreen === "upload" ? "/upload" : "/gallery"));
   }
 
   async function handleUpload(eventForm: FormEvent<HTMLFormElement>) {
@@ -2291,7 +2389,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       return;
     }
     if (!guestAccess.eventCode || !guestAccess.pin || uploadPreviews.length === 0) {
-      setNotice({ tone: "error", message: "Add the event code, PIN, and at least one photo." });
+      setNotice({ tone: "error", message: "Add the event code, PIN, and at least one file." });
       return;
     }
 
@@ -2331,7 +2429,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       }
 
       setUploadPreviews([]);
-      setNotice({ tone: "success", message: "Photos uploaded. Returning to the gallery." });
+      setNotice({ tone: "success", message: "Media uploaded. Returning to the gallery." });
       router.push(guestHref("/gallery"));
     } catch (error) {
       setNotice({
@@ -2355,6 +2453,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           file,
           url: URL.createObjectURL(file),
           capturedAt,
+          mediaType: getMediaTypeFromFile(file),
         };
       }),
     );
@@ -2591,6 +2690,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
           file,
           url: URL.createObjectURL(file),
           capturedAt,
+          mediaType: getMediaTypeFromFile(file),
         };
       }),
     );
@@ -2620,7 +2720,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     if (!hasSupabaseClientEnv) return;
     const previews = moderatorDraftUploads[sectionId] || [];
     if (previews.length === 0) {
-      setNotice({ tone: "error", message: "Choose one or more photos for this month first." });
+      setNotice({ tone: "error", message: "Choose one or more files for this month first." });
       return;
     }
 
@@ -2668,7 +2768,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
       previews.forEach((preview) => URL.revokeObjectURL(preview.url));
       setModeratorDraftUploads((current) => ({ ...current, [sectionId]: [] }));
       await requestModeratorWorkspace({ action: "open" });
-      setNotice({ tone: "success", message: "Timeline photos uploaded." });
+      setNotice({ tone: "success", message: "Timeline media uploaded." });
     } catch (error) {
       setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to upload chapter photos." });
     } finally {
@@ -2752,6 +2852,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
         photoRows.map((photo) => ({
           ...photo,
           imageUrl: imageUrlMap.get(photo.storage_path) ?? null,
+          mediaType: getMediaTypeFromExtension(photo.storage_path.split(".").pop() || ""),
         })),
       );
       if (typeof window !== "undefined") {
@@ -2892,7 +2993,7 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     }
     setAdminPhotos((current) =>
       current.map((photo) =>
-        photo.id === photoId ? { ...photo, ...data, imageUrl: photo.imageUrl } : photo,
+        photo.id === photoId ? { ...photo, ...data, imageUrl: photo.imageUrl, mediaType: photo.mediaType } : photo,
       ),
     );
   }
@@ -2927,14 +3028,14 @@ export function BirthdayApp({ initialGuestAccess }: BirthdayAppProps = {}) {
     >
       {needsGuestAccess ? (
         <AccessGate
-          body="Enter the event code and PIN to open Vaayu's scrapbook, browse the gallery, or upload photos."
-          cta="Open the birthday story"
+          body="Enter the event code and PIN to open Vaayu's gallery or continue to photo upload."
+          cta="Open the gallery"
           eventCode={guestAccess.eventCode}
           onEventCodeChange={(value) => setGuestAccess((current) => ({ ...current, eventCode: value }))}
           onPinChange={(value) => setGuestAccess((current) => ({ ...current, pin: value }))}
           onSubmit={handleAccessSubmit}
           pin={guestAccess.pin}
-          title="Open Vaayu's storybook"
+          title="Open Vaayu's gallery"
         />
       ) : null}
 

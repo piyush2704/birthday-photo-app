@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const allowedExts = new Set(["jpg", "jpeg", "png", "heic", "webp"])
+    const allowedExts = new Set(["jpg", "jpeg", "png", "heic", "webp", "mp4", "mov", "m4v", "webm", "ogg", "ogv"])
     if (!allowedExts.has(fileExt)) {
       return new Response(
         JSON.stringify({ error: "Unsupported file_ext" }),

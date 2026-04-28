@@ -29,6 +29,11 @@ type ModeratorStoryRequest = {
   }
 }
 
+function getMediaType(storagePath: string) {
+  const extension = storagePath.split(".").pop()?.toLowerCase() ?? ""
+  return ["mp4", "mov", "m4v", "webm", "ogg", "ogv"].includes(extension) ? "video" : "image"
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -318,40 +323,46 @@ async function loadWorkspace(
 
   const urlMap = new Map<string, { thumbUrl: string | null; fullUrl: string | null }>()
   for (const photo of photos || []) {
-    const [thumbResult, fullResult] = await Promise.all([
-      supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
-        transform: {
-          width: 640,
-          height: 760,
-          resize: "cover",
-          quality: 72,
-        },
-      }),
-      supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600),
-    ])
+    const mediaType = getMediaType(photo.storage_path)
+    const fullResult = await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600)
 
-    if (thumbResult.error || fullResult.error) {
-      throw new Error("Failed to prepare image URLs")
+    if (fullResult.error) {
+      continue
     }
 
+    const thumbResult =
+      mediaType === "image"
+        ? await supabase.storage.from("event-photos").createSignedUrl(photo.storage_path, 3600, {
+            transform: {
+              width: 640,
+              height: 760,
+              resize: "cover",
+              quality: 72,
+            },
+          })
+        : { data: { signedUrl: fullResult.data?.signedUrl ?? null } }
+
     urlMap.set(photo.storage_path, {
-      thumbUrl: thumbResult.data?.signedUrl ?? null,
+      thumbUrl: thumbResult.data?.signedUrl ?? fullResult.data?.signedUrl ?? null,
       fullUrl: fullResult.data?.signedUrl ?? null,
     })
   }
 
-  const photoCards = (photos || []).map((photo) => ({
-    id: photo.id,
-    title: photo.caption || "Story photo",
-    subtitle: photo.captured_at || photo.created_at,
-    status: photo.status,
-    image_url: urlMap.get(photo.storage_path)?.thumbUrl ?? null,
-    full_image_url: urlMap.get(photo.storage_path)?.fullUrl ?? null,
-    captured_at: photo.captured_at ?? photo.created_at,
-    is_visible: photo.is_visible,
-    timeline_section_id: photo.timeline_section_id,
-    timeline_sort_order: photo.timeline_sort_order,
-  }))
+  const photoCards = (photos || [])
+    .filter((photo) => urlMap.has(photo.storage_path))
+    .map((photo) => ({
+      id: photo.id,
+      title: photo.caption || "Story photo",
+      subtitle: photo.captured_at || photo.created_at,
+      status: photo.status,
+      image_url: urlMap.get(photo.storage_path)?.thumbUrl ?? null,
+      full_image_url: urlMap.get(photo.storage_path)?.fullUrl ?? null,
+      media_type: getMediaType(photo.storage_path),
+      captured_at: photo.captured_at ?? photo.created_at,
+      is_visible: photo.is_visible,
+      timeline_section_id: photo.timeline_section_id,
+      timeline_sort_order: photo.timeline_sort_order,
+    }))
 
   return {
     event,

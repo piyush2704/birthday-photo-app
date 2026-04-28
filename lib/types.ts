@@ -1,4 +1,5 @@
 export type PhotoStatus = "pending" | "approved" | "rejected";
+export type MediaType = "image" | "video";
 
 export type EventRole = "owner" | "admin" | "guest";
 
@@ -47,6 +48,7 @@ export type PhotoCard = {
   status: PhotoStatus;
   imageUrl: string | null;
   fullImageUrl?: string | null;
+  mediaType?: MediaType;
   capturedAt: string;
   visible?: boolean;
   timelineSectionId?: string | null;
@@ -127,6 +129,7 @@ export type GuestGalleryPhoto = {
   status: Extract<PhotoStatus, "approved">;
   image_url: string | null;
   full_image_url?: string | null;
+  media_type?: MediaType;
   captured_at: string;
 };
 
@@ -157,6 +160,7 @@ export type ModeratorGalleryPhoto = {
   status: PhotoStatus;
   image_url: string | null;
   full_image_url?: string | null;
+  media_type?: MediaType;
   captured_at?: string;
   is_visible?: boolean;
   timeline_section_id?: string | null;

@@ -1,6 +1,7 @@
 import type {
   EventRecord,
   GuestGalleryPhoto,
+  MediaType,
   PhotoCard,
   StorySectionCard,
   StorySectionRecord,
@@ -81,8 +82,22 @@ export function buildPhotoCardFromGuest(photo: GuestGalleryPhoto): PhotoCard {
     status: photo.status,
     imageUrl: photo.image_url,
     fullImageUrl: photo.full_image_url ?? photo.image_url,
+    mediaType: photo.media_type ?? "image",
     capturedAt: photo.captured_at,
   };
+}
+
+const videoExtensions = new Set(["mp4", "mov", "m4v", "webm", "ogg", "ogv"]);
+
+export function getMediaTypeFromExtension(extension: string): MediaType {
+  return videoExtensions.has(extension.toLowerCase()) ? "video" : "image";
+}
+
+export function getMediaTypeFromFile(file: File): MediaType {
+  if (file.type.startsWith("video/")) {
+    return "video";
+  }
+  return getMediaTypeFromExtension(getFileExtension(file));
 }
 
 export function buildDefaultSectionSeed(index: number, grouping: "month" | "year", birthDate?: string | null) {
