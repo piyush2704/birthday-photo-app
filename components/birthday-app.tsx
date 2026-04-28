@@ -969,7 +969,17 @@ function Lightbox({
               rel="noreferrer"
               target="_blank"
             >
-              Download full size
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path
+                  d="M12 3v10.5m0 0 4-4m-4 4-4-4M5 16.5v1.25C5 19 6 20 7.25 20h9.5C18 20 19 19 19 17.75V16.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                />
+              </svg>
+              <span>Download</span>
             </a>
           ) : null}
         </figcaption>
