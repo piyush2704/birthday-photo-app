@@ -919,6 +919,28 @@ function Lightbox({
     return null;
   }
 
+  useEffect(() => {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        onMove(-1);
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        onMove(1);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, onMove]);
+
   const active = photos[selectedIndex];
 
   return (
@@ -940,7 +962,16 @@ function Lightbox({
         }}
         type="button"
       >
-        ‹
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path
+            d="M14.5 5 8 12l6.5 7"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.6"
+          />
+        </svg>
       </button>
       <figure className="lightbox-frame" onClick={(event) => event.stopPropagation()}>
         {active.fullImageUrl || active.imageUrl ? (
@@ -993,7 +1024,16 @@ function Lightbox({
         }}
         type="button"
       >
-        ›
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path
+            d="m9.5 5 6.5 7-6.5 7"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.6"
+          />
+        </svg>
       </button>
     </div>
   );
